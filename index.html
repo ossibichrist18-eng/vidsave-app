@@ -1,0 +1,1838 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='42' fill='%2303030a' stroke='%2300dcff' stroke-width='8'/><text x='50' y='72' font-family='sans-serif' font-size='60' font-weight='bold' fill='%2300dcff' text-anchor='middle'>V</text></svg>">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- TITRE SEO (C'est ce qui s'affiche en bleu sur Google) -->
+<title>VidSave - Téléchargeur de Vidéos YouTube Gratuit & Rapide</title>
+
+<!-- DESCRIPTION SEO (C'est ce qui s'affiche en gris sur Google) -->
+<meta name="description" content="Téléchargez vos vidéos YouTube, TikTok et Facebook gratuitement. VidSave est l'outil le plus rapide pour sauvegarder vos contenus préférés en haute définition.">
+
+<!-- OPTIONNEL : Pour les réseaux sociaux (WhatsApp/Facebook) -->
+<meta property="og:title" content="VidSave - Univers Sans Limite">
+<meta property="og:description" content="Le meilleur outil gratuit pour télécharger vos vidéos en ligne.">
+<meta property="og:type" content="website">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- POLICE MODIFIÉE : Inter + Space Mono -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+
+<style>
+/* ══════════════════════════════════════════
+   RESET & ROOT
+══════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        #03030a;
+  --surface:   rgba(8, 8, 20, 0.85);
+  --surface2:  rgba(15, 15, 35, 0.9);
+  --border:    rgba(100, 80, 255, 0.2);
+  --border2:   rgba(0, 220, 255, 0.15);
+  --neon-v:    #7b5cff;
+  --neon-b:    #00dcff;
+  --neon-g:    #00ffaa;
+  --neon-r:    #ff4f8b;
+  --text:      #eeeeff;
+  --muted:     #8888bb;
+  --accent:    #7b5cff;
+  --accent2:   #00dcff;
+  --green:     #00ffaa;
+  --red:       #ff4f8b;
+  --gold:      #ffd700;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: linear-gradient(var(--neon-v), var(--neon-b)); border-radius: 3px; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif; /* Police modifiée */
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex; flex-direction: column; align-items: center;
+  overflow-x: hidden;
+  padding-bottom: 60px;
+  cursor: none;
+}
+
+/* ══════════════════════════════════════════
+   CUSTOM CURSOR
+══════════════════════════════════════════ */
+.cursor-outer {
+  position: fixed; width: 36px; height: 36px;
+  border: 1.5px solid var(--neon-b);
+  border-radius: 50%; pointer-events: none; z-index: 9999;
+  transform: translate(-50%, -50%);
+  transition: width .3s, height .3s, border-color .3s, opacity .3s;
+  mix-blend-mode: screen;
+}
+.cursor-inner {
+  position: fixed; width: 7px; height: 7px;
+  background: var(--neon-v);
+  border-radius: 50%; pointer-events: none; z-index: 9999;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 12px 4px var(--neon-v);
+  transition: width .1s, height .1s, background .2s;
+}
+body:has(button:hover) .cursor-outer,
+body:has(a:hover) .cursor-outer { width: 56px; height: 56px; border-color: var(--neon-v); }
+
+/* ══════════════════════════════════════════
+   ANIMATED CANVAS BACKGROUND
+══════════════════════════════════════════ */
+#bg-canvas {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  z-index: 0; pointer-events: none;
+}
+
+/* Aurora glow blobs */
+.aurora {
+  position: fixed; z-index: 0; pointer-events: none;
+  border-radius: 50%; filter: blur(80px); mix-blend-mode: screen;
+}
+.aurora-1 {
+  width: 700px; height: 700px; top: -200px; left: -200px;
+  background: radial-gradient(circle, rgba(123,92,255,.25) 0%, transparent 70%);
+  animation: auroraFloat1 14s ease-in-out infinite;
+}
+.aurora-2 {
+  width: 600px; height: 600px; bottom: -150px; right: -100px;
+  background: radial-gradient(circle, rgba(0,220,255,.2) 0%, transparent 70%);
+  animation: auroraFloat2 18s ease-in-out infinite;
+}
+.aurora-3 {
+  width: 400px; height: 400px; top: 40%; left: 50%;
+  background: radial-gradient(circle, rgba(0,255,170,.12) 0%, transparent 70%);
+  animation: auroraFloat3 22s ease-in-out infinite;
+}
+@keyframes auroraFloat1 {
+  0%,100% { transform: translate(0,0) scale(1); }
+  33%      { transform: translate(80px, 60px) scale(1.1); }
+  66%      { transform: translate(-40px, 100px) scale(.9); }
+}
+@keyframes auroraFloat2 {
+  0%,100% { transform: translate(0,0) scale(1); }
+  50%      { transform: translate(-100px, -80px) scale(1.15); }
+}
+@keyframes auroraFloat3 {
+  0%,100% { transform: translate(-50%,-50%) scale(1); }
+  33%      { transform: translate(-60%,-60%) scale(1.2); }
+  66%      { transform: translate(-40%,-40%) scale(.85); }
+}
+
+/* Noise texture overlay */
+body::before {
+  content: '';
+  position: fixed; inset: 0; z-index: 1; pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: .025;
+}
+
+/* Grid pattern */
+body::after {
+  content: '';
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background-image:
+    linear-gradient(rgba(123,92,255,.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(123,92,255,.04) 1px, transparent 1px);
+  background-size: 60px 60px;
+  mask-image: radial-gradient(ellipse at 50% 40%, black 20%, transparent 75%);
+}
+
+/* All main content above z-index:0 */
+header, .hero, .card, .queue-container, .history, footer, .stats-row {
+  position: relative; z-index: 2;
+}
+
+/* ══════════════════════════════════════════
+   HEADER
+══════════════════════════════════════════ */
+header {
+  width: 100%;
+  padding: 18px 48px;
+  display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  background: rgba(3, 3, 10, 0.7);
+  backdrop-filter: blur(24px) saturate(180%);
+  position: sticky; top: 0; z-index: 100;
+}
+
+/* ── Logo ── */
+.logo {
+  display: flex; align-items: center; gap: 14px;
+  font-family: 'Inter', system-ui, sans-serif; /* Police modifiée */
+  font-size: 1.45rem; font-weight: 800;
+  text-decoration: none; cursor: pointer;
+  user-select: none;
+}
+.logo-text {
+  background: linear-gradient(135deg, #c0a8ff 0%, #7b5cff 40%, #00dcff 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  letter-spacing: -.5px;
+}
+
+/* V Icon — spinning 3D */
+.logo-icon-wrap {
+  position: relative; width: 44px; height: 44px;
+  display: flex; align-items: center; justify-content: center;
+}
+.logo-icon-wrap::before {
+  content: '';
+  position: absolute; inset: -3px;
+  border-radius: 50%;
+  background: conic-gradient(var(--neon-v), var(--neon-b), var(--neon-g), var(--neon-v));
+  animation: spinBorder 3s linear infinite;
+  z-index: 0;
+}
+.logo-icon-wrap::after {
+  content: '';
+  position: absolute; inset: 3px;
+  border-radius: 50%;
+  background: #03030a;
+  z-index: 1;
+}
+@keyframes spinBorder { to { transform: rotate(360deg); } }
+
+.logo-V {
+  position: relative; z-index: 2;
+  width: 38px; height: 38px;
+  animation: spinV3D 6s linear infinite;
+  transform-style: preserve-3d;
+}
+@keyframes spinV3D {
+  0%   { transform: rotateY(0deg); }
+  100% { transform: rotateY(360deg); }
+}
+
+.logo-V svg { width: 100%; height: 100%; }
+
+/* Header nav pills */
+.header-nav { display: flex; gap: 10px; align-items: center; }
+.nav-pill {
+  padding: 8px 18px; border-radius: 40px;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-family: 'Inter', system-ui, sans-serif; /* Police modifiée */
+  font-size: .85rem; font-weight: 600;
+  cursor: pointer;
+  transition: all .25s;
+  position: relative; overflow: hidden;
+}
+.nav-pill::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(135deg, rgba(123,92,255,.2), rgba(0,220,255,.15));
+  opacity: 0; transition: opacity .25s;
+}
+.nav-pill:hover { color: var(--text); border-color: var(--neon-v); }
+.nav-pill:hover::before { opacity: 1; }
+.nav-pill.cta {
+  background: linear-gradient(135deg, var(--neon-v), var(--neon-b));
+  color: white; border: none;
+  box-shadow: 0 0 18px rgba(123,92,255,.45);
+}
+.nav-pill.cta:hover { box-shadow: 0 0 30px rgba(0,220,255,.5); transform: translateY(-2px); }
+
+/* Status dot */
+.status-dot {
+  display: flex; align-items: center; gap: 7px;
+  font-size: .8rem; color: var(--green); font-family: 'Space Mono', monospace; /* Police modifiée */
+}
+.status-dot::before {
+  content: '';
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 10px var(--green);
+  animation: pulseDot 2s ease-in-out infinite;
+}
+@keyframes pulseDot {
+  0%,100% { box-shadow: 0 0 6px var(--green); }
+  50%      { box-shadow: 0 0 18px var(--green), 0 0 30px rgba(0,255,170,.3); }
+}
+
+/* ══════════════════════════════════════════
+   HERO
+══════════════════════════════════════════ */
+.hero {
+  width: 100%; max-width: 960px;
+  padding: 72px 24px 48px;
+  text-align: center;
+}
+
+.hero-eyebrow {
+  display: inline-flex; align-items: center; gap: 10px;
+  padding: 7px 18px; border-radius: 40px;
+  border: 1px solid rgba(0,220,255,.3);
+  background: rgba(0,220,255,.06);
+  color: var(--neon-b);
+  font-family: 'Space Mono', monospace; /* Police modifiée */
+  font-size: .8rem; letter-spacing: 2px; text-transform: uppercase;
+  margin-bottom: 32px;
+  animation: fadeInDown .7s ease both;
+}
+.hero-eyebrow-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--neon-b); animation: pulseDot 2s infinite; }
+
+h1 {
+  font-family: 'Inter', system-ui, sans-serif; /* Police modifiée */
+  font-size: clamp(2.4rem, 5.5vw, 4.5rem);
+  font-weight: 800; line-height: 1.08;
+  letter-spacing: -1.5px;
+  margin-bottom: 22px;
+  animation: fadeInDown .7s .15s ease both;
+}
+h1 em {
+  font-style: normal;
+  background: linear-gradient(135deg, #b39dff 0%, #7b5cff 35%, #00dcff 65%, #00ffaa 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  display: inline-block;
+  filter: drop-shadow(0 0 30px rgba(123,92,255,.4));
+}
+
+.subtitle {
+  color: var(--muted);
+  font-size: 1.1rem; line-height: 1.7;
+  max-width: 620px; margin: 0 auto 16px;
+  font-weight: 400;
+  animation: fadeInDown .7s .3s ease both;
+}
+
+/* Stats row */
+.stats-row {
+  display: flex; justify-content: center; gap: 40px;
+  margin: 0 auto 36px; flex-wrap: wrap;
+  animation: fadeInDown .7s .4s ease both;
+}
+.stat {
+  display: flex; flex-direction: column; align-items: center;
+}
+.stat-num {
+  font-family: 'Inter', system-ui, sans-serif; /* Police modifiée */
+  font-weight: 800; font-size: 1.8rem;
+  background: linear-gradient(135deg, #7b5cff, #00dcff);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.stat-label { font-size: .75rem; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; margin-top: 2px; }
+
+/* Platform badges */
+.platforms {
+  display: flex; justify-content: center; gap: 10px;
+  flex-wrap: wrap; margin-bottom: 40px;
+  animation: fadeInDown .7s .45s ease both;
+}
+.badge {
+  padding: 9px 18px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 40px;
+  font-size: .84rem; font-weight: 700;
+  color: var(--muted);
+  display: flex; align-items: center; gap: 8px;
+  cursor: default; transition: all .3s;
+  position: relative; overflow: hidden;
+  font-family: 'Inter', system-ui, sans-serif; /* Police modifiée */
+}
+/* ... (le reste du CSS des badges inchangé) */
+.badge::before {
+  content: ''; position: absolute; inset: 0; opacity: 0;
+  transition: opacity .3s;
+}
+.badge:hover { transform: translateY(-3px); color: var(--text); }
+.badge.yt { color: #ff4e4e; }
+.badge.yt::before { background: radial-gradient(circle at 50% 150%, rgba(255,78,78,.2), transparent); }
+.badge.yt:hover { border-color: #ff4e4e; box-shadow: 0 0 18px rgba(255,78,78,.3); }
+.badge.yt:hover::before { opacity: 1; }
+.badge.tk { color: #25F4EE; }
+.badge.tk:hover { border-color: #25F4EE; box-shadow: 0 0 18px rgba(37,244,238,.3); }
+.badge.fb { color: #1877F2; }
+.badge.fb:hover { border-color: #1877F2; box-shadow: 0 0 18px rgba(24,119,242,.3); }
+.badge.ig { color: #e1306c; }
+.badge.ig:hover { border-color: #e1306c; box-shadow: 0 0 18px rgba(225,48,108,.3); }
+.badge.tw { color: #e7e7e7; }
+.badge.tw:hover { border-color: #e7e7e7; }
+
+/* ══════════════════════════════════════════
+   TABS
+══════════════════════════════════════════ */
+.tabs {
+  display: flex; justify-content: center; gap: 6px;
+  margin-bottom: 24px; flex-wrap: wrap;
+  animation: fadeInDown .7s .5s ease both;
+  background: rgba(8,8,20,.7);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 6px;
+  backdrop-filter: blur(12px);
+  width: fit-content;
+  margin-left: auto; margin-right: auto;
+}
+.tab-btn {
+  padding: 12px 26px;
+  border-radius: 13px;
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-weight: 700; font-size: .92rem;
+  cursor: pointer;
+  transition: all .3s;
+  font-family: 'Inter', system-ui, sans-serif; /* Police modifiée */
+  position: relative;
+  display: flex; align-items: center; gap: 8px;
+}
+.tab-btn .tab-icon { font-size: 1.1rem; }
+.tab-btn.active {
+  background: linear-gradient(135deg, rgba(123,92,255,.25), rgba(0,220,255,.2));
+  color: var(--text);
+  box-shadow: 0 0 20px rgba(123,92,255,.25), inset 0 0 0 1px rgba(123,92,255,.4);
+}
+.tab-btn:not(.active):hover { color: var(--text); background: rgba(255,255,255,.05); }
+
+/* ══════════════════════════════════════════
+   CARD
+══════════════════════════════════════════ */
+.card-wrap {
+  width: 100%; max-width: 800px; margin: 0 auto;
+  animation: fadeInDown .7s .55s ease both;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 28px;
+  padding: 36px;
+  backdrop-filter: blur(32px) saturate(150%);
+  position: relative;
+  overflow: hidden;
+}
+/* Animated gradient border */
+.card::before {
+  content: '';
+  position: absolute; inset: -2px;
+  border-radius: 30px;
+  background: conic-gradient(
+    from var(--angle, 0deg),
+    transparent 30%,
+    var(--neon-v) 40%,
+    var(--neon-b) 50%,
+    transparent 60%
+  );
+  z-index: -1;
+  animation: rotateBorder 5s linear infinite;
+}
+@property --angle { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
+@keyframes rotateBorder { to { --angle: 360deg; } }
+
+.card::after {
+  content: '';
+  position: absolute; inset: 1px;
+  border-radius: 27px;
+  background: rgba(3,3,10,.92);
+  z-index: -1;
+}
+
+/* Section label inside card */
+.card-label {
+  font-family: 'Space Mono', monospace; /* Police modifiée */
+  font-size: .72rem; letter-spacing: 2.5px; text-transform: uppercase;
+  color: var(--neon-v); margin-bottom: 18px;
+  display: flex; align-items: center; gap: 8px;
+}
+.card-label::after { content: ''; flex: 1; height: 1px; background: linear-gradient(to right, var(--border), transparent); }
+
+/* ══════════════════════════════════════════
+   INPUT ROW
+══════════════════════════════════════════ */
+.input-row { display: flex; gap: 12px; align-items: stretch; flex-wrap: wrap; }
+.input-wrap {
+  flex: 1; position: relative;
+  display: flex; align-items: center;
+  min-width: 220px;
+}
+
+.input-icon {
+  position: absolute; left: 18px;
+  color: var(--muted); width: 20px; height: 20px;
+  pointer-events: none; transition: color .25s;
+  z-index: 1;
+}
+
+input[type="url"], input[type="text"] {
+  width: 100%;
+  padding: 17px 110px 17px 52px;
+  background: rgba(15,15,40,.8);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  color: var(--text);
+  font-size: .95rem;
+  font-family: 'Inter', system-ui, sans-serif; /* Police modifiée */
+  outline: none;
+  transition: border-color .25s, box-shadow .25s;
+  backdrop-filter: blur(8px);
+}
+input:focus {
+  border-color: var(--neon-v);
+  box-shadow: 0 0 0 3px rgba(123,92,255,.15), 0 0 20px rgba(123,92,255,.12);
+}
+input:focus + .input-icon, .input-wrap:focus-within .input-icon { color: var(--neon-v); }
+
+input::placeholder { color: rgba(136,136,187,.5); }
+
+.paste-btn {
+  position: absolute; right: 10px;
+  padding: 9px 14px;
+  background: rgba(123,92,255,.1);
+  color: var(--muted);
+  border: 1px solid rgba(123,92,255,.25);
+  border-radius: 10px;
+  font-size: .78rem; font-weight: 700;
+  cursor: pointer; transition: all .25s;
+  font-family: 'Inter', system-ui, sans-serif; /* Police modifiée */
+  white-space: nowrap;
+  z-index: 2;
+}
+.paste-btn:hover { background: rgba(123,92,255,.25); color: var(--text); border-color: var(--neon-v); }
+
+/* ══════════════════════════════════════════
+   BUTTONS
+══════════════════════════════════════════ */
+button { cursor: pointer; }
+
+.btn-primary {
+  padding: 17px 32px;
+  background: linear-gradient(135deg, var(--neon-v) 0%, #5a3fd4 50%, var(--neon-b) 100%);
+  background-size: 200% auto;
+  color: white; border: none;
+  border-radius: 16px;
+  font-weight: 800; font-size: .95rem;
+  font-family: 'Inter', system-ui, sans-serif; /* Police modifiée */
+  letter-spacing: .3px;
+  transition: all .3s;
+  position: relative; overflow: hidden;
+  box-shadow: 0 4px 24px rgba(123,92,255,.4);
+  white-space: nowrap;
+}
+.btn-primary::before {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,.15), transparent);
+  opacity: 0; transition: opacity .25s;
+}
+.btn-primary::after {
+  content: '';
+  position: absolute; top: -50%; left: -60%;
+  width: 30%; height: 200%;
+  background: rgba(255,255,255,.18);
+  transform: skewX(-20deg);
+  transition: left .5s;
+}
+.btn-primary:hover:not(:disabled) {
+  box-shadow: 0 6px 30px rgba(0,220,255,.45), 0 0 60px rgba(123,92,255,.3);
+  transform: translateY(-3px);
+  background-position: right center;
+}
+.btn-primary:hover::before { opacity: 1; }
+.btn-primary:hover::after { left: 120%; }
+.btn-primary:active { transform: translateY(-1px) scale(.98); }
+.btn-primary:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+
+/* Ripple effect */
+.ripple {
+  position: absolute; border-radius: 50%;
+  background: rgba(255,255,255,.25);
+  width: 10px; height: 10px;
+  animation: rippleAnim .6s linear;
+  pointer-events: none;
+}
+@keyframes rippleAnim {
+  from { transform: scale(0); opacity: 1; }
+  to   { transform: scale(20); opacity: 0; }
+}
+
+.btn-secondary {
+  padding: 14px 22px;
+  background: rgba(15,15,40,.8);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  border-radius: 14px;
+  font-weight: 700; font-size: .88rem;
+  font-family: 'Inter', system-ui, sans-serif; /* Police modifiée */
+  transition: all .25s;
+}
+.btn-secondary:hover { border-color: var(--neon-b); color: var(--neon-b); background: rgba(0,220,255,.07); }
+
+.btn-green {
+  padding: 14px 22px;
+  background: linear-gradient(135deg, rgba(0,255,170,.15), rgba(0,255,170,.05));
+  border: 1px solid rgba(0,255,170,.35);
+  color: var(--green);
+  border-radius: 14px;
+  font-weight: 700; font-size: .88rem;
+  font-family: 'Inter', system-ui, sans-serif; /* Police modifiée */
+  transition: all .3s;
+  box-shadow: 0 0 16px rgba(0,255,170,.1);
+}
+.btn-green:hover { background: rgba(0,255,170,.2); box-shadow: 0 0 28px rgba(0,255,170,.3); transform: translateY(-2px); }
+
+/* ══════════════════════════════════════════
+   UPLOAD ZONE
+══════════════════════════════════════════ */
+.upload-zone {
+  border: 2px dashed var(--border);
+  border-radius: 20px;
+  padding: 50px 24px;
+  text-align: center;
+  background: rgba(123,92,255,.03);
+  cursor: pointer;
+  transition: all .3s;
+  position: relative; overflow: hidden;
+}
+.upload-zone:hover {
+  border-color: var(--neon-v);
+  background: rgba(123,92,255,.07);
+  box-shadow: 0 0 30px rgba(123,92,255,.12) inset;
+}
+.upload-icon {
+  width: 64px; height: 64px;
+  margin: 0 auto 18px;
+  background: linear-gradient(135deg, rgba(123,92,255,.2), rgba(0,220,255,.15));
+  border-radius: 18px;
+  display: flex; align-items: center; justify-content: center;
+  border: 1px solid rgba(123,92,255,.3);
+}
+.upload-icon svg { width: 30px; height: 30px; color: var(--neon-v); }
+.upload-zone p { color: var(--muted); font-size: .95rem; line-height: 1.6; }
+.upload-zone p b { color: var(--text); display: block; font-size: 1.1rem; margin-bottom: 4px; }
+.upload-zone p small { font-size: .8rem; color: rgba(136,136,187,.6); }
+#fileInput, #fileInputVideo { display: none; }
+
+/* Format types row */
+.format-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; justify-content: center; }
+.format-tag {
+  padding: 5px 12px; border-radius: 8px;
+  background: rgba(0,220,255,.07); border: 1px solid rgba(0,220,255,.2);
+  color: var(--neon-b); font-size: .75rem; font-family: 'Space Mono', monospace; /* Police modifiée */
+}
+
+/* ══════════════════════════════════════════
+   SELECTS / INPUTS SMALL
+══════════════════════════════════════════ */
+.convert-options { display: none; margin-top: 18px; }
+select, .input-small {
+  padding: 13px 16px;
+  background: rgba(15,15,40,.9);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--text);
+  font-size: .9rem; font-family: 'Inter', system-ui, sans-serif; /* Police modifiée */
+  outline: none; width: 100%;
+  transition: border-color .25s;
+}
+select:focus, .input-small:focus { border-color: var(--neon-v); }
+.row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 10px; }
+
+/* ══════════════════════════════════════════
+   RESULT BOX
+══════════════════════════════════════════ */
+.result-box {
+  background: rgba(15,15,40,.8);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 22px;
+  text-align: left;
+  margin-top: 18px;
+  backdrop-filter: blur(12px);
+}
+.result-title {
+  font-family: 'Inter', system-ui, sans-serif; /* Police modifiée */
+  font-size: 1.05rem; font-weight: 700;
+  margin-bottom: 8px;
+}
+.result-meta { color: var(--muted); font-size: .85rem; margin-bottom: 14px; line-height: 1.5; }
+.action-buttons { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+
+/* ══════════════════════════════════════════
+   QUEUE
+══════════════════════════════════════════ */
+.queue-container {
+  width: 100%; max-width: 800px;
+  margin: 36px auto 0; display: none; text-align: left;
+}
+.queue-header {
+  font-family: 'Inter', system-ui, sans-serif; /* Police modifiée */
+  font-size: 1.15rem; font-weight: 800;
+  margin-bottom: 18px;
+  display: flex; align-items: center; gap: 14px;
+}
+.queue-header-line {
+  flex: 1; height: 1px;
+  background: linear-gradient(to right, var(--neon-v), transparent);
+}
+.queue-header-badge {
+  font-family: 'Space Mono', monospace; /* Police modifiée */
+  font-size: .7rem; letter-spacing: 1.5px;
+  color: var(--neon-v); padding: 3px 10px;
+  border: 1px solid rgba(123,92,255,.3);
+  border-radius: 6px; background: rgba(123,92,255,.08);
+}
+
+.queue-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 18px 20px;
+  display: flex; gap: 16px; align-items: center;
+  margin-bottom: 12px;
+  backdrop-filter: blur(16px);
+  transition: box-shadow .3s, border-color .3s;
+  position: relative; overflow: hidden;
+}
+.queue-card::before {
+  content: '';
+  position: absolute; left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: linear-gradient(to bottom, var(--neon-v), var(--neon-b));
+  border-radius: 3px 0 0 3px;
+}
+.queue-card:hover { border-color: rgba(123,92,255,.3); box-shadow: 0 4px 20px rgba(123,92,255,.1); }
+
+.q-thumb {
+  width: 48px; height: 48px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(123,92,255,.2), rgba(0,220,255,.15));
+  border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.3rem; flex-shrink: 0;
+}
+.q-info { flex: 1; }
+.q-title { font-size: .88rem; font-weight: 700; margin-bottom: 8px; font-family: 'Inter', system-ui, sans-serif; /* Police modifiée */ }
+.progress-container {
+  width: 100%;
+  background: rgba(255,255,255,.05);
+  border-radius: 6px; height: 6px; margin: 0 0 6px;
+  overflow: hidden;
+}
+.progress-bar {
+  height: 100%;
+  background: linear-gradient(to right, var(--neon-v), var(--neon-b));
+  border-radius: 6px;
+  width: 0%; transition: width .4s cubic-bezier(.4,0,.2,1);
+  position: relative;
+}
+.progress-bar::after {
+  content: '';
+  position: absolute; right: 0; top: 0; bottom: 0;
+  width: 20px;
+  background: white;
+  border-radius: 4px;
+  filter: blur(4px);
+  opacity: .7;
+}
+.q-status {
+  display: flex; justify-content: space-between;
+  font-size: .78rem; color: var(--muted);
+  font-family: 'Space Mono', monospace; /* Police modifiée */
+}
+
+/* ══════════════════════════════════════════
+   HISTORY
+══════════════════════════════════════════ */
+.history {
+  width: 100%; max-width: 800px;
+  margin: 44px auto 0;
+  padding: 0 24px;
+}
+.history-header {
+  font-family: 'Inter', system-ui, sans-serif; /* Police modifiée */
+  font-size: 1.1rem; font-weight: 800;
+  margin-bottom: 16px;
+  display: flex; align-items: center; gap: 14px;
+}
+.history-item {
+  padding: 13px 16px;
+  border-bottom: 1px solid rgba(100,80,255,.1);
+  display: flex; justify-content: space-between;
+  color: var(--muted);
+  font-size: .85rem;
+  transition: background .2s, color .2s;
+  border-radius: 10px;
+}
+.history-item:hover { background: rgba(123,92,255,.07); color: var(--text); }
+
+/* ══════════════════════════════════════════
+   FEATURES SECTION
+══════════════════════════════════════════ */
+.features-section {
+  width: 100%; max-width: 960px;
+  padding: 60px 24px 0;
+  position: relative; z-index: 2;
+}
+.section-title {
+  font-family: 'Inter', system-ui, sans-serif; /* Police modifiée */
+  font-size: 1.5rem; font-weight: 800;
+  text-align: center; margin-bottom: 32px;
+  display: flex; align-items: center; gap: 16px;
+}
+.section-title::before, .section-title::after {
+  content: ''; flex: 1; height: 1px;
+  background: linear-gradient(to right, transparent, var(--border));
+}
+.section-title::after { background: linear-gradient(to left, transparent, var(--border)); }
+
+.features-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+.feature-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 24px;
+  backdrop-filter: blur(20px);
+  transition: all .3s;
+  position: relative; overflow: hidden;
+}
+.feature-card::before {
+  content: '';
+  position: absolute; inset: 0;
+  opacity: 0; transition: opacity .3s;
+  background: radial-gradient(circle at 50% 100%, rgba(123,92,255,.1), transparent 70%);
+}
+.feature-card:hover { transform: translateY(-4px); border-color: rgba(123,92,255,.35); box-shadow: 0 8px 32px rgba(123,92,255,.15); }
+.feature-card:hover::before { opacity: 1; }
+
+.feature-icon {
+  width: 48px; height: 48px; border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.4rem; margin-bottom: 14px;
+}
+.fi-v { background: linear-gradient(135deg, rgba(123,92,255,.25), rgba(123,92,255,.1)); }
+.fi-b { background: linear-gradient(135deg, rgba(0,220,255,.25), rgba(0,220,255,.1)); }
+.fi-g { background: linear-gradient(135deg, rgba(0,255,170,.25), rgba(0,255,170,.1)); }
+.fi-r { background: linear-gradient(135deg, rgba(255,79,139,.25), rgba(255,79,139,.1)); }
+
+.feature-name {
+  font-family: 'Inter', system-ui, sans-serif; /* Police modifiée */
+  font-size: .95rem; font-weight: 700;
+  margin-bottom: 7px;
+}
+.feature-desc { color: var(--muted); font-size: .84rem; line-height: 1.6; }
+
+/* ══════════════════════════════════════════
+   HOW IT WORKS
+══════════════════════════════════════════ */
+.steps-row {
+  display: flex; gap: 0; align-items: stretch;
+  margin: 0 24px;
+  flex-wrap: wrap;
+}
+.step {
+  flex: 1; min-width: 160px;
+  display: flex; flex-direction: column; align-items: center;
+  text-align: center; padding: 24px 16px;
+  position: relative;
+}
+.step:not(:last-child)::after {
+  content: '→';
+  position: absolute; right: -10px; top: 50%; transform: translateY(-60%);
+  color: var(--border); font-size: 1.4rem;
+}
+.step-num {
+  width: 48px; height: 48px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Space Mono', monospace; /* Police modifiée */
+  font-size: 1rem; font-weight: 700;
+  border: 2px solid var(--neon-v);
+  color: var(--neon-v); margin-bottom: 14px;
+  position: relative; z-index: 1;
+  background: rgba(3,3,10,.9);
+  box-shadow: 0 0 16px rgba(123,92,255,.25);
+}
+.step-name { font-weight: 700; font-size: .9rem; margin-bottom: 6px; font-family: 'Inter', system-ui, sans-serif; /* Police modifiée */ }
+.step-desc { color: var(--muted); font-size: .8rem; line-height: 1.5; }
+
+/* ══════════════════════════════════════════
+   FOOTER
+══════════════════════════════════════════ */
+footer {
+  margin-top: auto;
+  padding: 36px;
+  text-align: center;
+  width: 100%;
+  border-top: 1px solid var(--border);
+  position: relative; z-index: 2;
+}
+.footer-logo {
+  font-family: 'Inter', system-ui, sans-serif; /* Police modifiée */
+  font-weight: 800; font-size: 1.2rem;
+  background: linear-gradient(135deg, #7b5cff, #00dcff);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  margin-bottom: 10px;
+}
+.footer-muted { color: var(--muted); font-size: .83rem; line-height: 1.6; }
+.footer-links { display: flex; justify-content: center; gap: 24px; margin-top: 14px; }
+.footer-links a { color: var(--muted); text-decoration: none; font-size: .82rem; transition: color .2s; cursor: pointer; }
+.footer-links a:hover { color: var(--neon-v); }
+
+/* ══════════════════════════════════════════
+   MODAL LEGAL (ajouté pour les pages légales)
+══════════════════════════════════════════ */
+.legal-modal {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(3,3,10,.85); backdrop-filter: blur(12px);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 1000; visibility: hidden; opacity: 0; transition: .25s;
+}
+.legal-modal.open { visibility: visible; opacity: 1; }
+.legal-dialog {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 24px; max-width: 600px; width: 90%;
+  max-height: 80vh; overflow-y: auto;
+  padding: 32px; position: relative;
+  box-shadow: 0 0 40px rgba(123,92,255,.2);
+  font-family: 'Inter', system-ui, sans-serif;
+}
+.legal-dialog h2 {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 1.6rem; margin-bottom: 16px;
+  background: linear-gradient(135deg, var(--neon-v), var(--neon-b));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.legal-dialog h3 {
+  font-size: 1.1rem; margin-top: 20px; color: var(--text);
+}
+.legal-dialog p, .legal-dialog li {
+  color: var(--muted); font-size: .92rem; line-height: 1.7; margin-bottom: 12px;
+}
+.legal-dialog ul { padding-left: 1.5rem; margin-bottom: 12px; }
+.legal-close {
+  position: absolute; top: 16px; right: 16px;
+  background: none; border: none; color: var(--muted);
+  font-size: 1.5rem; cursor: pointer; transition: .2s;
+}
+.legal-close:hover { color: var(--neon-v); }
+
+/* ══════════════════════════════════════════
+   ANIMATIONS
+══════════════════════════════════════════ */
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; } to { opacity: 1; }
+}
+
+/* ══════════════════════════════════════════
+   FLOATING PARTICLES
+══════════════════════════════════════════ */
+.particle {
+  position: fixed; border-radius: 50%;
+  pointer-events: none; z-index: 0;
+  animation: floatParticle linear infinite;
+  opacity: 0;
+}
+@keyframes floatParticle {
+  0%   { transform: translateY(100vh) scale(0); opacity: 0; }
+  10%  { opacity: 1; }
+  90%  { opacity: .8; }
+  100% { transform: translateY(-10vh) scale(1); opacity: 0; }
+}
+
+/* ══════════════════════════════════════════
+   RESPONSIVE
+══════════════════════════════════════════ */
+@media (max-width: 640px) {
+  header { padding: 16px 20px; }
+  .header-nav .nav-pill:not(.cta) { display: none; }
+  .hero { padding: 48px 16px 32px; }
+  .card { padding: 22px; }
+  .stats-row { gap: 24px; }
+  .step:not(:last-child)::after { display: none; }
+}
+
+/* Divider */
+.divider { width: 100%; max-width: 800px; margin: 0 auto; height: 1px; background: linear-gradient(to right, transparent, var(--border), transparent); position: relative; z-index: 2; }
+
+/* Separator with dots */
+.dot-sep { display: flex; justify-content: center; gap: 6px; padding: 20px 0; position: relative; z-index: 2; }
+.dot-sep span { width: 4px; height: 4px; border-radius: 50%; background: var(--border); }
+.dot-sep span:nth-child(2) { background: var(--neon-v); opacity: .6; }
+</style>
+</head>
+<body>
+
+<!-- Cursors -->
+<div class="cursor-outer" id="cursorOuter"></div>
+<div class="cursor-inner" id="cursorInner"></div>
+
+<!-- Animated particle canvas -->
+<canvas id="bg-canvas"></canvas>
+
+<!-- Aurora blobs -->
+<div class="aurora aurora-1"></div>
+<div class="aurora aurora-2"></div>
+<div class="aurora aurora-3"></div>
+
+<!-- ═══════════════════════ HEADER ═══════════════════════ -->
+<header>
+  <div class="logo" onclick="window.scrollTo({top:0})">
+    <div class="logo-icon-wrap">
+      <div class="logo-V">
+        <!-- Police modifiée dans le SVG -->
+        <svg viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="gV" x1="0" y1="0" x2="44" y2="44" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#b39dff"/>
+              <stop offset=".5" stop-color="#7b5cff"/>
+              <stop offset="1" stop-color="#00dcff"/>
+            </linearGradient>
+          </defs>
+          <text x="5" y="36" font-family="Inter, system-ui, sans-serif" font-size="34" font-weight="900" fill="url(#gV)">V</text>
+        </svg>
+      </div>
+    </div>
+    <span class="logo-text">VideoSave</span>
+  </div>
+
+  <div class="header-nav">
+    <div class="status-dot">Serveur actif</div>
+    <button class="nav-pill">⚡ API</button>
+    <button class="nav-pill cta">🚀 Pro gratuit</button>
+  </div>
+</header>
+
+<!-- ═══════════════════════ HERO ═══════════════════════ -->
+<div class="hero">
+  <div class="hero-eyebrow">
+    <span class="hero-eyebrow-dot"></span>
+    NOUVEAU · VERSION 3.0 DISPONIBLE
+  </div>
+
+  <h1>Téléchargez l'Internet<br><em>sans frontières</em></h1>
+
+  <p class="subtitle">
+    La plateforme la plus puissante pour convertir, découper et sauvegarder
+    vos vidéos préférées — en haute définition, instantanément.
+  </p>
+
+  <div class="stats-row">
+    <div class="stat">
+      <span class="stat-num">12M+</span>
+      <span class="stat-label">Téléchargements</span>
+    </div>
+    <div class="stat">
+      <span class="stat-num">4K</span>
+      <span class="stat-label">Qualité max</span>
+    </div>
+    <div class="stat">
+      <span class="stat-num">50+</span>
+      <span class="stat-label">Plateformes</span>
+    </div>
+    <div class="stat">
+      <span class="stat-num">0€</span>
+      <span class="stat-label">Toujours gratuit</span>
+    </div>
+  </div>
+
+  <div class="platforms">
+    <span class="badge yt">▶ YouTube</span>
+    <span class="badge tk">🎵 TikTok</span>
+    <span class="badge fb">📘 Facebook</span>
+    <span class="badge ig">📸 Instagram</span>
+    <span class="badge tw">✦ X (Twitter)</span>
+    <span class="badge">🎬 Vimeo</span>
+    <span class="badge">🎮 Twitch</span>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('youtube')">
+      <span class="tab-icon">🌐</span> Téléchargeur Web
+    </button>
+    <button class="tab-btn" onclick="switchTab('playlist')">
+      <span class="tab-icon">📋</span> Playlist
+    </button>
+    <button class="tab-btn" onclick="switchTab('local')">
+      <span class="tab-icon">💻</span> Fichier local
+    </button>
+  </div>
+
+  <!-- CARD WRAPPER -->
+  <div class="card-wrap">
+    <div class="card">
+
+      <!-- ── ONGLET WEB ── -->
+      <div id="tab-youtube">
+        <div class="card-label">🌐 Coller votre lien vidéo</div>
+        <div class="input-row">
+          <div class="input-wrap">
+            <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/>
+              <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/>
+            </svg>
+            <input type="url" id="urlInput" placeholder="https://youtube.com/watch?v=..." autocomplete="off"/>
+            <button class="paste-btn" onclick="pasteFromClipboard()">📋 Coller</button>
+          </div>
+          <button class="btn-primary" id="searchBtn" onclick="searchVideo(); addRipple(event, this)">
+            ⚡ Analyser
+          </button>
+        </div>
+
+        <div style="margin-top:14px; display:flex; gap:10px; flex-wrap:wrap;">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:.85rem;color:var(--muted);">
+            <input type="checkbox" id="subtitlesChk" style="accent-color:var(--neon-v)"> Sous-titres (SRT/VTT)
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:.85rem;color:var(--muted);">
+            <input type="checkbox" id="thumbnailChk" style="accent-color:var(--neon-v)"> Miniature HD
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:.85rem;color:var(--muted);">
+            <select id="qualitySelect" style="padding:6px 10px;border-radius:8px;background:rgba(15,15,40,.9);border:1px solid var(--border);color:var(--text);font-size:.82rem;">
+              <option value="best">🏆 Meilleure qualité</option>
+              <option value="1080">📺 1080p Full HD</option>
+              <option value="720">🖥️ 720p HD</option>
+              <option value="480">📱 480p</option>
+              <option value="360">💾 360p léger</option>
+              <option value="audio">🎵 Audio seul (MP3)</option>
+            </select>
+          </label>
+        </div>
+        <div id="result"></div>
+      </div>
+
+      <!-- ── ONGLET PLAYLIST ── -->
+      <div id="tab-playlist" style="display:none;">
+        <div class="card-label">📋 Importer une playlist entière</div>
+        <p style="color:var(--muted);font-size:.88rem;margin-bottom:16px;line-height:1.6;">
+          Collez l'URL d'une playlist YouTube, TikTok ou autre. VideoSave listera chaque épisode
+          et vous laissera choisir lesquels sauvegarder — avec un seul clic.
+        </p>
+        <div class="input-row">
+          <div class="input-wrap">
+            <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/>
+              <line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/>
+              <line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
+            </svg>
+            <input type="url" id="playlistUrlInput" placeholder="https://youtube.com/playlist?list=..." />
+          </div>
+          <button class="btn-primary" onclick="searchPlaylist(); addRipple(event, this)">
+            📋 Lister les vidéos
+          </button>
+        </div>
+        <div id="playlistResult"></div>
+      </div>
+
+      <!-- ── ONGLET LOCAL ── -->
+      <div id="tab-local" style="display:none;">
+        <div style="display:grid; gap:18px; grid-template-columns:1fr 1fr; flex-wrap:wrap;" class="local-grid">
+
+          <!-- MP3 conversion -->
+          <div>
+            <div class="card-label">🎵 Vidéo → MP3</div>
+            <div class="upload-zone" onclick="document.getElementById('fileInput').click()">
+              <div class="upload-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></div>
+              <p><b>Glissez votre fichier ici</b>Cliquez pour sélectionner<br><small>MP4 · MKV · AVI · MOV · WebM</small></p>
+            </div>
+            <div class="format-tags">
+              <span class="format-tag">MP4</span><span class="format-tag">MKV</span>
+              <span class="format-tag">AVI</span><span class="format-tag">MOV</span>
+            </div>
+            <input type="file" id="fileInput" accept="video/*" onchange="handleLocalFile(this.files, 'mp3')">
+            <div class="convert-options" id="mp3Options">
+              <div class="row">
+                <select id="mp3Quality">
+                  <option value="320">🎵 320 kbps — Studio</option>
+                  <option value="256">🎶 256 kbps — Haute</option>
+                  <option value="192" selected>🎧 192 kbps — Standard</option>
+                  <option value="128">📻 128 kbps — Léger</option>
+                </select>
+              </div>
+              <div class="row" style="margin-top:10px;">
+                <button class="btn-primary" onclick="uploadAndConvertToMp3(); addRipple(event,this)">
+                  🎵 Convertir en MP3
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Video conversion -->
+          <div>
+            <div class="card-label">🎬 Convertir / Découper</div>
+            <div class="upload-zone" onclick="document.getElementById('fileInputVideo').click()">
+              <div class="upload-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="7" y2="7"/><line x1="2" y1="17" x2="7" y2="17"/><line x1="17" y1="17" x2="22" y2="17"/><line x1="17" y1="7" x2="22" y2="7"/></svg></div>
+              <p><b>Importer une vidéo</b>Découpe & conversion de format<br><small>Jusqu'à 2 Go supportés</small></p>
+            </div>
+            <div class="format-tags">
+              <span class="format-tag">→ MP4</span><span class="format-tag">→ MKV</span>
+              <span class="format-tag">→ AVI</span><span class="format-tag">→ GIF</span>
+            </div>
+            <input type="file" id="fileInputVideo" accept="video/*" onchange="handleLocalFile(this.files, 'video')">
+            <div class="convert-options" id="videoOptions">
+              <div class="row">
+                <select id="outputFormat" style="flex:1">
+                  <option value="mp4">MP4 (H.264)</option>
+                  <option value="mkv">MKV</option>
+                  <option value="avi">AVI</option>
+                  <option value="gif">GIF animé</option>
+                  <option value="webm">WebM</option>
+                </select>
+              </div>
+              <div class="row">
+                <input class="input-small" type="number" id="trimStart" placeholder="Début (sec)" style="flex:1">
+                <input class="input-small" type="number" id="trimEnd"   placeholder="Fin (sec)"   style="flex:1">
+              </div>
+              <div class="row">
+                <button class="btn-primary" onclick="uploadAndConvertVideo(); addRipple(event,this)">
+                  ✂️ Découper & Convertir
+                </button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div><!-- /card -->
+  </div><!-- /card-wrap -->
+</div><!-- /hero -->
+
+<!-- ═══════════════════════ QUEUE ═══════════════════════ -->
+<div class="queue-container" id="queueContainer">
+  <div class="queue-header">
+    <span>📡 File de téléchargement</span>
+    <div class="queue-header-line"></div>
+    <span class="queue-header-badge">LIVE</span>
+  </div>
+  <div id="queueList"></div>
+</div>
+
+<!-- ═══════════════════════ FEATURES ═══════════════════════ -->
+<div class="dot-sep"><span></span><span></span><span></span></div>
+
+<div class="features-section">
+  <div class="section-title">Pourquoi VideoSave ?</div>
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon fi-v">🏎️</div>
+      <div class="feature-name">Ultra-rapide</div>
+      <div class="feature-desc">Serveurs optimisés en Europe — temps de réponse < 300 ms et téléchargement en parallèle.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon fi-b">🎯</div>
+      <div class="feature-name">Qualité maximale</div>
+      <div class="feature-desc">Jusqu'en 4K / 8K quand disponible. Conteneur MKV pour préserver chaque détail.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon fi-g">🔒</div>
+      <div class="feature-name">100% Privé</div>
+      <div class="feature-desc">Aucun fichier stocké après livraison. Aucun compte requis. Aucune publicité intégrée.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon fi-r">🧬</div>
+      <div class="feature-name">Tout-en-un</div>
+      <div class="feature-desc">Téléchargement, conversion, découpe, sous-titres automatiques — un seul outil.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════ STEPS ═══════════════════════ -->
+<div class="features-section" style="padding-top:44px;">
+  <div class="section-title">Comment ça marche ?</div>
+  <div class="steps-row">
+    <div class="step">
+      <div class="step-num">01</div>
+      <div class="step-name">Copiez le lien</div>
+      <div class="step-desc">Depuis YouTube, TikTok, Instagram ou n'importe quelle plateforme supportée.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">02</div>
+      <div class="step-name">Analysez</div>
+      <div class="step-desc">VideoSave détecte le titre, la durée et les formats disponibles en secondes.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">03</div>
+      <div class="step-name">Choisissez</div>
+      <div class="step-desc">Qualité, format, plage horaire, sous-titres — tout est configurable.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">04</div>
+      <div class="step-name">Téléchargez</div>
+      <div class="step-desc">Le fichier arrive directement sur votre appareil. Sans inscription. Sans attente.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════ HISTORY ═══════════════════════ -->
+<div class="history">
+  <div class="history-header">
+    <span>🕑 Historique local</span>
+    <div class="queue-header-line" style="background:linear-gradient(to right,var(--border),transparent)"></div>
+  </div>
+  <div id="historyList"></div>
+</div>
+
+<!-- ═══════════════════════ FOOTER ═══════════════════════ -->
+<footer>
+  <div class="footer-logo">⚡ VideoSave</div>
+  <div class="footer-muted">
+    Téléchargez légalement du contenu auquel vous avez le droit d'accéder.<br>
+    Respectez les droits d'auteur et les conditions d'utilisation de chaque plateforme.
+  </div>
+  <div class="footer-links">
+    <a onclick="openLegal('privacy')">Confidentialité</a>
+    <a onclick="openLegal('terms')">Conditions</a>
+    <a onclick="openLegal('api')">API</a>
+    <a onclick="openLegal('contact')">Contact</a>
+  </div>
+</footer>
+
+<!-- ═══════════════════════ MODAL LÉGAL ═══════════════════════ -->
+<div class="legal-modal" id="legalModal">
+  <div class="legal-dialog" id="legalContent"></div>
+</div>
+
+<!-- ═══════════════════════ SCRIPTS ═══════════════════════ -->
+<script>
+/* ── CONFIG ── */
+const API_URL = 'http://localhost:3000';
+let currentVideoData = null;
+let currentVideoUrl  = '';
+
+/* ── CURSOR ── */
+const co = document.getElementById('cursorOuter');
+const ci = document.getElementById('cursorInner');
+let mx = 0, my = 0, ox = 0, oy = 0;
+document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+function animCursor() {
+  ox += (mx - ox) * .14;
+  oy += (my - oy) * .14;
+  co.style.left = ox + 'px'; co.style.top = oy + 'px';
+  ci.style.left = mx + 'px'; ci.style.top  = my + 'px';
+  requestAnimationFrame(animCursor);
+}
+animCursor();
+
+/* ── RIPPLE ── */
+function addRipple(e, btn) {
+  const r = document.createElement('span');
+  r.className = 'ripple';
+  const rect = btn.getBoundingClientRect();
+  r.style.left = (e.clientX - rect.left - 5) + 'px';
+  r.style.top  = (e.clientY - rect.top  - 5) + 'px';
+  btn.appendChild(r);
+  setTimeout(() => r.remove(), 700);
+}
+
+/* ── STAR FIELD CANVAS ── */
+(function() {
+  const canvas = document.getElementById('bg-canvas');
+  const ctx = canvas.getContext('2d');
+  let W, H, stars = [], nebulae = [];
+
+  function resize() {
+    W = canvas.width  = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+  }
+
+  function mkStars() {
+    stars = [];
+    for (let i = 0; i < 220; i++) {
+      stars.push({
+        x: Math.random() * W, y: Math.random() * H,
+        r: Math.random() * 1.5 + .2,
+        o: Math.random(),
+        speed: Math.random() * .003 + .001,
+        phase: Math.random() * Math.PI * 2,
+        color: ['#ffffff','#c0a8ff','#00dcff','#aaffdd'][Math.floor(Math.random()*4)]
+      });
+    }
+    nebulae = [];
+    for (let i = 0; i < 6; i++) {
+      nebulae.push({
+        x: Math.random() * W, y: Math.random() * H,
+        r: 80 + Math.random() * 180,
+        color: ['rgba(123,92,255,.06)','rgba(0,220,255,.05)','rgba(0,255,170,.04)'][i%3],
+        speed: .0002 + Math.random() * .0004,
+        phase: Math.random() * Math.PI * 2
+      });
+    }
+  }
+
+  let t = 0;
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    t += .012;
+
+    // Nebulae
+    nebulae.forEach(n => {
+      const oy = Math.sin(t * n.speed * 100 + n.phase) * 30;
+      const g = ctx.createRadialGradient(n.x, n.y + oy, 0, n.x, n.y + oy, n.r);
+      g.addColorStop(0, n.color);
+      g.addColorStop(1, 'transparent');
+      ctx.beginPath();
+      ctx.arc(n.x, n.y + oy, n.r, 0, Math.PI * 2);
+      ctx.fillStyle = g;
+      ctx.fill();
+    });
+
+    // Stars
+    stars.forEach(s => {
+      const o = .3 + .7 * (.5 + .5 * Math.sin(t * s.speed * 100 + s.phase));
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+      ctx.fillStyle = s.color;
+      ctx.globalAlpha = o;
+      ctx.fill();
+      if (s.r > 1.2) {
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r * 3, 0, Math.PI * 2);
+        const gstar = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, s.r * 3);
+        gstar.addColorStop(0, s.color.replace(')', ', .3)').replace('rgb', 'rgba'));
+        gstar.addColorStop(1, 'transparent');
+        ctx.fillStyle = gstar;
+        ctx.globalAlpha = o * .4;
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+    });
+
+    if (Math.random() < .004) spawnShooter();
+    shooters.forEach((sh, i) => {
+      sh.x += sh.vx; sh.y += sh.vy; sh.life--;
+      if (sh.life <= 0) { shooters.splice(i, 1); return; }
+      const alpha = sh.life / sh.maxLife;
+      ctx.beginPath();
+      ctx.moveTo(sh.x, sh.y);
+      ctx.lineTo(sh.x - sh.vx * 8, sh.y - sh.vy * 8);
+      ctx.strokeStyle = `rgba(180,160,255,${alpha})`;
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    });
+
+    requestAnimationFrame(draw);
+  }
+
+  const shooters = [];
+  function spawnShooter() {
+    const a = Math.random() * Math.PI * .5 - Math.PI * .25;
+    shooters.push({
+      x: Math.random() * W * .8,
+      y: Math.random() * H * .3,
+      vx: Math.cos(a) * 8, vy: Math.sin(a) * 8 + 4,
+      life: 30 + Math.random() * 20,
+      maxLife: 50
+    });
+  }
+
+  window.addEventListener('resize', () => { resize(); mkStars(); });
+  resize(); mkStars(); draw();
+})();
+
+/* ── TABS ── */
+function switchTab(name) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  event.target.closest('.tab-btn').classList.add('active');
+  ['youtube','playlist','local'].forEach(t => {
+    document.getElementById('tab-' + t).style.display = t === name ? '' : 'none';
+  });
+}
+
+/* ── CLIPBOARD ── */
+async function pasteFromClipboard() {
+  try {
+    const text = await navigator.clipboard.readText();
+    if (text) { document.getElementById('urlInput').value = text; searchVideo(); }
+  } catch(e) { alert('Utilisez Ctrl+V'); }
+}
+
+/* ── SEARCH VIDEO ── */
+async function searchVideo() {
+  const url = document.getElementById('urlInput').value.trim();
+  if (!url) { showError('result', 'Veuillez coller un lien vidéo valide.'); return; }
+  const btn = document.getElementById('searchBtn');
+  btn.disabled = true; btn.textContent = '⏳ Analyse...';
+  document.getElementById('result').innerHTML = `
+    <div class="result-box" style="text-align:center;color:var(--muted);padding:30px;">
+      <div style="font-size:2rem;margin-bottom:10px;">⚡</div>
+      <div style="font-family:'Space Mono',monospace;font-size:.85rem;">Récupération des métadonnées…</div>
+    </div>`;
+  try {
+    const res = await fetch(`${API_URL}/api/info`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url })
+    });
+    const data = await res.json();
+    currentVideoData = data;
+    renderVideoInfo(data);
+  } catch(e) {
+    showError('result', '⚠️ Impossible d\'analyser ce lien. Vérifiez l\'URL ou la connexion au serveur.');
+  }
+  btn.disabled = false; btn.textContent = '⚡ Analyser';
+}
+
+function renderVideoInfo(data) {
+  currentVideoUrl = data.url;
+  let optionsHtml = data.qualities
+    ? data.qualities.map(q => `<option value="${q}">📺 ${q}p</option>`).join('')
+    : '<option value="best">🏆 Meilleure qualité</option><option value="1080">1080p</option><option value="720">720p</option><option value="480">480p</option>';
+  optionsHtml += `<option value="mp3">🎵 Audio MP3</option>`;
+  document.getElementById('result').innerHTML = `
+    <div class="result-box">
+      <div style="display:flex;gap:14px;align-items:flex-start;margin-bottom:16px;">
+        ${data.thumbnail ? `<img src="${data.thumbnail}" style="width:80px;height:56px;object-fit:cover;border-radius:10px;flex-shrink:0;">` : ''}
+        <div>
+          <div class="result-title">🎬 ${data.title || 'Vidéo détectée'}</div>
+          <div class="result-meta">${data.duration ? '⏱️ ' + formatDuration(data.duration) : ''}${data.uploader ? ' · 👤 ' + data.uploader : ''}</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px;">
+        <select id="formatSelector" style="padding:10px 14px;background:rgba(15,15,40,.9);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:.88rem;">${optionsHtml}</select>
+        <input placeholder="Début (s)" type="number" id="clipStart" style="width:90px;padding:10px;background:rgba(15,15,40,.9);border:1px solid var(--border);border-radius:10px;color:var(--text);">
+        <input placeholder="Fin (s)" type="number" id="clipEnd" style="width:90px;padding:10px;background:rgba(15,15,40,.9);border:1px solid var(--border);border-radius:10px;color:var(--text);">
+      </div>
+      <div class="action-buttons">
+        <button class="btn-primary" onclick="downloadVideo(); addRipple(event,this)">⬇️ Télécharger</button>
+        ${data.thumbnail ? `<button class="btn-secondary" onclick="downloadThumbnail('${data.thumbnail}')">🖼️ Miniature HD</button>` : ''}
+        <button class="btn-secondary" onclick="showSubtitles()">📝 Sous-titres</button>
+      </div>
+      <div id="subtitleArea" style="margin-top:12px;display:none;"></div>
+    </div>`;
+}
+
+function formatDuration(s) {
+  const m = Math.floor(s / 60), sec = s % 60;
+  return `${m}:${String(sec).padStart(2,'0')}`;
+}
+
+function showError(id, msg) {
+  document.getElementById(id).innerHTML = `
+    <div class="result-box" style="border-color:rgba(255,79,139,.3);">
+      <div style="color:var(--red);font-weight:700;">${msg}</div>
+    </div>`;
+}
+
+/* ── DOWNLOAD ── */
+function downloadVideo() {
+  const format = document.getElementById('formatSelector').value;
+  const start  = document.getElementById('clipStart')?.value || 0;
+  const end    = document.getElementById('clipEnd')?.value   || 0;
+  const data   = currentVideoData;
+  addJobToQueue('Web', data.title, async (tid) => {
+    const res = await fetch(`${API_URL}/api/start-download?url=${encodeURIComponent(data.url)}&quality=${format}&title=${encodeURIComponent(data.title)}&start=${start}&end=${end}`);
+    const job = await res.json();
+    updateQueueId(tid, job.jobId);
+    pollJob(job.jobId);
+  });
+}
+
+function downloadThumbnail(thumbUrl) {
+  window.open(`${API_URL}/api/download-thumb?url=${encodeURIComponent(thumbUrl)}`, '_blank');
+}
+
+async function showSubtitles() {
+  const area = document.getElementById('subtitleArea');
+  area.style.display = 'block';
+  area.innerHTML = '<span style="color:var(--muted);font-size:.85rem;">Chargement des langues…</span>';
+  try {
+    const res = await fetch(`${API_URL}/api/subtitles`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: currentVideoUrl })
+    });
+    const data = await res.json();
+    if (!data.languages || !data.languages.length) { area.innerHTML = '<span style="color:var(--muted)">Aucun sous-titre disponible.</span>'; return; }
+    area.innerHTML = '<b style="font-size:.85rem">Langues : </b>' +
+      data.languages.map(l => `<button class="btn-secondary" style="padding:6px 12px;font-size:.8rem;margin:3px;" onclick="downloadSub('${l.code}')">${l.name} (${l.code})</button>`).join('');
+  } catch(e) { area.innerHTML = '<span style="color:var(--red)">Erreur sous-titres.</span>'; }
+}
+
+function downloadSub(lang) {
+  window.open(`${API_URL}/api/download-sub?url=${encodeURIComponent(currentVideoUrl)}&lang=${lang}`, '_blank');
+}
+
+/* ── PLAYLIST ── */
+async function searchPlaylist() {
+  const url = document.getElementById('playlistUrlInput').value.trim();
+  if (!url) return;
+  document.getElementById('playlistResult').innerHTML = `<div style="color:var(--muted);padding:20px;text-align:center;">⏳ Chargement de la playlist…</div>`;
+  try {
+    const res = await fetch(`${API_URL}/api/playlist`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url })
+    });
+    const data = await res.json();
+    if (!data.entries || !data.entries.length) { document.getElementById('playlistResult').innerHTML = '<div style="color:var(--red);padding:10px;">Aucune vidéo trouvée.</div>'; return; }
+    document.getElementById('playlistResult').innerHTML = `
+      <div style="margin-top:16px;">
+        <div style="font-weight:700;margin-bottom:12px;">${data.title || 'Playlist'} — ${data.entries.length} vidéos</div>
+        ${data.entries.map((v, i) => `
+          <div class="queue-card" style="margin-bottom:8px;">
+            ${v.thumbnail ? `<img src="${v.thumbnail}" style="width:48px;height:36px;object-fit:cover;border-radius:8px;flex-shrink:0;" onerror="this.style.display='none'">` : `<div class="q-thumb">${i+1}</div>`}
+            <div class="q-info"><div class="q-title">${v.title||'Vidéo '+(i+1)}</div>
+            <div style="font-size:.78rem;color:var(--muted)">${v.duration ? formatDuration(v.duration) : '--:--'}</div></div>
+            <button class="btn-green" style="padding:8px 14px;font-size:.8rem;" onclick="downloadPlaylistVideo('${encodeURIComponent(v.url)}','${(v.title||'').replace(/'/g,'\\\'')}')">⬇️</button>
+          </div>`).join('')}
+      </div>`;
+  } catch(e) { showError('playlistResult', 'Impossible de charger cette playlist.'); }
+}
+
+function downloadPlaylistVideo(videoUrl, title) {
+  addJobToQueue('Playlist', decodeURIComponent(title), async (tid) => {
+    const res = await fetch(`${API_URL}/api/start-download?url=${videoUrl}&quality=720&title=${title}`);
+    const job = await res.json();
+    updateQueueId(tid, job.jobId); pollJob(job.jobId);
+  });
+}
+
+/* ── LOCAL FILES ── */
+let selectedMp3File = null;
+
+function handleLocalFile(files, type) {
+  if (!files.length) return;
+  if (type === 'mp3') {
+    selectedMp3File = files[0];
+    document.getElementById('mp3Options').style.display = 'block';
+  } else {
+    document.getElementById('videoOptions').style.display = 'block';
+  }
+}
+
+function uploadAndConvertToMp3() {
+  if (!selectedMp3File) return alert('Sélectionnez un fichier');
+  addJobToQueue('PC', selectedMp3File.name, (tid) => {
+    const fd = new FormData();
+    fd.append('file', selectedMp3File);
+    fd.append('originalName', selectedMp3File.name);
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `${API_URL}/api/convert-to-mp3`, true);
+    xhr.upload.onprogress = e => {
+      if (e.lengthComputable) updateProgress(tid, Math.round(e.loaded/e.total*100)+'%', 'Envoi…');
+    };
+    xhr.onload = () => {
+      if (xhr.status === 200) { const d = JSON.parse(xhr.responseText); updateQueueId(tid, d.jobId); pollJob(d.jobId); }
+      else updateProgress(tid, '❌ Erreur', '');
+    };
+    xhr.send(fd);
+  });
+  selectedMp3File = null;
+  document.getElementById('mp3Options').style.display = 'none';
+}
+
+function uploadAndConvertVideo() {
+  const fi = document.getElementById('fileInputVideo');
+  if (!fi.files.length) return alert('Choisissez un fichier');
+  const file = fi.files[0];
+  const format = document.getElementById('outputFormat').value;
+  const start  = document.getElementById('trimStart').value || 0;
+  const end    = document.getElementById('trimEnd').value   || 0;
+  addJobToQueue('PC', file.name, (tid) => {
+    const fd = new FormData();
+    fd.append('file', file); fd.append('originalName', file.name);
+    fd.append('format', format); fd.append('start', start); fd.append('end', end);
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `${API_URL}/api/convert-video`, true);
+    xhr.upload.onprogress = e => {
+      if (e.lengthComputable) updateProgress(tid, Math.round(e.loaded/e.total*100)+'%', 'Envoi…');
+    };
+    xhr.onload = () => {
+      if (xhr.status === 200) {
+        const d = JSON.parse(xhr.responseText);
+        updateQueueId(tid, d.jobId); pollJob(d.jobId);
+      } else updateProgress(tid, '❌ Erreur', '');
+    };
+    xhr.send(fd);
+  });
+  fi.value = '';
+  document.getElementById('videoOptions').style.display = 'none';
+}
+
+/* ── QUEUE ── */
+function addJobToQueue(type, title, cb) {
+  document.getElementById('queueContainer').style.display = 'block';
+  const tid = 'tmp_' + Date.now();
+  const icons = { Web:'🌐', Playlist:'📋', PC:'💻', Sub:'📝' };
+  const card = document.createElement('div');
+  card.className = 'queue-card'; card.id = 'card_' + tid;
+  card.innerHTML = `
+    <div class="q-thumb">${icons[type]||'📁'}</div>
+    <div class="q-info">
+      <div class="q-title">${title}</div>
+      <div class="progress-container"><div class="progress-bar" id="prog_${tid}"></div></div>
+      <div class="q-status"><span id="txt_${tid}">Initialisation…</span><span id="eta_${tid}"></span></div>
+    </div>`;
+  document.getElementById('queueList').prepend(card);
+  cb(tid);
+}
+
+function updateQueueId(oldId, newId) {
+  ['card_','prog_','txt_','eta_'].forEach(p => {
+    const el = document.getElementById(p + oldId);
+    if (el) el.id = p + newId;
+  });
+}
+
+function updateProgress(id, text, eta) {
+  const txt = document.getElementById('txt_' + id);
+  const bar = document.getElementById('prog_' + id);
+  const etaEl = document.getElementById('eta_' + id);
+  if (txt) txt.innerText = text;
+  if (bar) bar.style.width = (parseFloat(text) || 0) + '%';
+  if (etaEl && eta) etaEl.innerText = eta;
+}
+
+function pollJob(jobId) {
+  const iv = setInterval(async () => {
+    try {
+      const res = await fetch(`${API_URL}/api/status?jobId=${jobId}`);
+      const data = await res.json();
+      if (['downloading','trimming','converting'].includes(data.status)) {
+        updateProgress(jobId, data.progress + (isNaN(data.progress)?'':'%'), data.eta||'');
+      } else if (data.status === 'done') {
+        clearInterval(iv);
+        updateProgress(jobId, '100%', '');
+        document.getElementById('txt_' + jobId).innerHTML = '✅ Terminé !';
+        document.getElementById('prog_' + jobId).style.background = 'linear-gradient(to right, var(--green), #00c896)';
+        triggerDownload(jobId); saveToHistory(jobId);
+      } else if (data.status === 'error') {
+        clearInterval(iv);
+        updateProgress(jobId, '0%', '');
+        document.getElementById('txt_' + jobId).innerHTML = '❌ Échec';
+        document.getElementById('prog_' + jobId).style.background = 'var(--red)';
+      }
+    } catch(e) {}
+  }, 1000);
+}
+
+function triggerDownload(jobId) {
+  const a = document.createElement('a');
+  a.href = `${API_URL}/api/get-file?jobId=${jobId}`;
+  a.download = '';
+  document.body.appendChild(a); a.click();
+  setTimeout(() => a.remove(), 5000);
+}
+
+/* ── HISTORY ── */
+function saveToHistory(jobId) {
+  const item = { id: jobId, date: new Date().toLocaleString('fr-FR') };
+  let h = JSON.parse(localStorage.getItem('vsHistory')||'[]');
+  h.unshift(item); if (h.length > 20) h.pop();
+  localStorage.setItem('vsHistory', JSON.stringify(h));
+  renderHistory();
+}
+
+function renderHistory() {
+  const h = JSON.parse(localStorage.getItem('vsHistory')||'[]');
+  const c = document.getElementById('historyList');
+  if (!h.length) {
+    c.innerHTML = '<div style="color:var(--muted);font-size:.85rem;padding:12px;text-align:center;">Aucun téléchargement pour l\'instant</div>';
+    return;
+  }
+  c.innerHTML = h.map(x => `
+    <div class="history-item">
+      <span>📁 <span style="font-family:\'Space Mono\',monospace;font-size:.8rem;">${x.id}</span></span>
+      <span>${x.date}</span>
+    </div>`).join('');
+}
+
+/* ═══════════════════════ PAGES LÉGALES ═══════════════════════ */
+function openLegal(page) {
+  const modal = document.getElementById('legalModal');
+  const content = document.getElementById('legalContent');
+  let html = '';
+  if (page === 'privacy') {
+    html = `
+      <button class="legal-close" onclick="closeLegal()">✕</button>
+      <h2>Politique de confidentialité</h2>
+      <p><strong>Dernière mise à jour :</strong> 26 avril 2026</p>
+      <h3>1. Collecte de données</h3>
+      <p>VideoSave ne crée pas de compte utilisateur. Nous ne collectons aucun identifiant personnel (nom, email, adresse IP stockée en clair). Les URLs que vous soumettez sont traitées en mémoire et ne sont jamais journalisées sur disque.</p>
+      <h3>2. Cookies & traceurs</h3>
+      <p>Nous n’utilisons <strong>aucun cookie tiers</strong>, aucun pixel de tracking et aucun service d’analyse externe. La configuration locale (historique) est stockée exclusivement dans votre navigateur via <code>localStorage</code>.</p>
+      <h3>3. Stockage des fichiers</h3>
+      <p>Les vidéos converties ou téléchargées sont immédiatement supprimées du serveur après livraison. Aucune copie n’est conservée, sauvegardée ou partagée.</p>
+      <h3>4. Base légale</h3>
+      <p>Le service est hébergé en Europe et respecte le RGPD. Aucune donnée personnelle n’est transférée hors de l’Union Européenne.</p>
+      <h3>5. Contact</h3>
+      <p>Pour toute question, écrivez à <strong>privacy@videoscive.com</strong> — réponse sous 48h.</p>
+    `;
+  } else if (page === 'terms') {
+    html = `
+      <button class="legal-close" onclick="closeLegal()">✕</button>
+      <h2>Conditions d'utilisation</h2>
+      <p><strong>Date d’effet :</strong> 26 avril 2026</p>
+      <h3>Utilisation légale uniquement</h3>
+      <p>Vous vous engagez à n’utiliser VideoSave que pour du contenu dont vous détenez les droits ou pour lequel la plateforme source autorise le téléchargement (usage privé, fair use). Il est strictement interdit de contourner les protections techniques ou de redistribuer des contenus protégés sans autorisation.</p>
+      <h3>Responsabilité</h3>
+      <p>VideoSave agit en tant que simple intermédiaire technique. L’utilisateur est seul responsable de l’usage qu’il fait des fichiers obtenus.</p>
+      <h3>Disponibilité du service</h3>
+      <p>Nous maintenons une disponibilité de 99,9% mais ne pouvons être tenus responsables des interruptions liées à la maintenance ou aux fournisseurs tiers.</p>
+      <h3>Modifications</h3>
+      <p>Les présentes conditions peuvent évoluer. La poursuite de l’utilisation du site vaut acceptation des nouvelles conditions.</p>
+    `;
+  } else if (page === 'api') {
+    html = `
+      <button class="legal-close" onclick="closeLegal()">✕</button>
+      <h2>API VideoSave — Documentation</h2>
+      <p>Intégrez la puissance de VideoSave dans vos propres applications. Notre API REST est conçue pour les développeurs et les partenaires.</p>
+      <h3>Authentification</h3>
+      <p>Clé API requise. Contactez-nous pour obtenir un accès partenaire. Taux limite : 1000 requêtes/jour gratuit.</p>
+      <h3>Endpoints principaux</h3>
+      <ul>
+        <li><code>POST /api/info</code> — Obtenir les métadonnées d’une vidéo</li>
+        <li><code>GET /api/start-download</code> — Lancer un téléchargement</li>
+        <li><code>GET /api/status</code> — Suivre un job</li>
+        <li><code>GET /api/get-file</code> — Récupérer le fichier final</li>
+      </ul>
+      <h3>SDKs</h3>
+      <p>Des bibliothèques Python, JavaScript et PHP sont disponibles sur demande pour accélérer votre développement.</p>
+      <h3>Accès partenaires</h3>
+      <p>Volume illimité, support prioritaire, SLA garanti. Écrivez à <strong>api@videoscive.com</strong> pour un dossier personnalisé.</p>
+    `;
+  } else if (page === 'contact') {
+    html = `
+      <button class="legal-close" onclick="closeLegal()">✕</button>
+      <h2>Contact</h2>
+      <p>Une question, un partenariat ou un projet sur mesure ? Notre équipe est disponible.</p>
+      <h3>Email</h3>
+      <p>📧 <strong>contact@videoscive.com</strong> — réponse garantie en moins de 4 heures ouvrées.</p>
+      <h3>Presse & Médias</h3>
+      <p>🎙️ <strong>presse@videoscive.com</strong> — visuels, interviews, chiffres clés.</p>
+      <h3>Support technique</h3>
+      <p>🛠️ <strong>support@videoscive.com</strong> — inclus pour tous les partenaires API.</p>
+      <h3>Réseaux</h3>
+      <p>🐦 Twitter · 💼 LinkedIn · 📺 YouTube (liens disponibles sur demande)</p>
+    `;
+  }
+  content.innerHTML = html;
+  modal.classList.add('open');
+}
+
+function closeLegal() {
+  document.getElementById('legalModal').classList.remove('open');
+}
+
+/* Fermer en cliquant en dehors du dialogue */
+document.getElementById('legalModal').addEventListener('click', function(e) {
+  if (e.target === this) closeLegal();
+});
+
+/* ── INIT ── */
+window.addEventListener('DOMContentLoaded', () => {
+  renderHistory();
+  document.querySelectorAll('.feature-card').forEach((c, i) => {
+    c.style.animationDelay = (i * .1) + 's';
+    c.style.animation = 'fadeInDown .7s ease both';
+    c.style.opacity = 0;
+    setTimeout(() => { c.style.opacity = ''; }, 100);
+  });
+});
+</script>
+</body>
+</html>
