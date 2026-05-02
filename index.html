@@ -1526,7 +1526,7 @@ function downloadVideo() {
   const end    = document.getElementById('clipEnd')?.value   || 0;
   const data   = currentVideoData;
   addJobToQueue('Web', data.title, async (tid) => {
-    const res = await fetch(`${API_URL}/api/start-download?url=${encodeURIComponent(data.url)}&quality=${format}&title=${encodeURIComponent(data.title)}&start=${start}&end=${end}`);
+    const res = await fetch(`${API_URL}/api/start-download?url=${encodeURIComponent(currentVideoUrl)}&quality=${format}&title=${encodeURIComponent(data.title)}&start=${start}&end=${end}`);
     const job = await res.json();
     updateQueueId(tid, job.jobId);
     pollJob(job.jobId);
