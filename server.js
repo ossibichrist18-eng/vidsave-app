@@ -80,7 +80,8 @@ app.get('/api/start-download', (req, res) => {
     let formatSelection, ext = 'mp4';
     if (quality === 'audio') { formatSelection = 'bestaudio[ext=m4a]/bestaudio'; ext = 'm4a'; }
     else if (quality === 'mp3') { formatSelection = 'bestaudio/best'; ext = 'mp3'; }
-    else { formatSelection = `bestvideo[vcodec^=avc][height<=${quality}][ext=mp4]+bestaudio[ext=m4a]/best[vcodec^=avc][height<=${quality}][ext=mp4]/best`; }
+    else if (!quality || isNaN(quality)) { formatSelection = 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best'; }
+else { formatSelection = `bestvideo[vcodec^=avc][height<=${quality}][ext=mp4]+bestaudio[ext=m4a]/best[vcodec^=avc][height<=${quality}][ext=mp4]/best`; }
 
     const tempFile = path.join(dlDir, `temp_${jobId}.${ext}`);
     jobs[jobId] = { status: 'downloading', file: tempFile, ext, title: finalTitle, progress: '0', eta: '--:--' };
