@@ -5,11 +5,14 @@ const fs = require('fs');
 const path = require('path');
 const multer = require('multer');
 const { spawn } = require('child_process');
-const ffmpegStatic = require('ffmpeg-static'); // ⚡ ajouté
+const ffmpegStatic = require('ffmpeg-static');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+// ✅ Servir le fichier index.html
+app.use(express.static(path.join(__dirname)));
 
 // Dossiers
 const dlDir = path.join(__dirname, 'downloads');
@@ -20,12 +23,9 @@ if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
 const upload = multer({ dest: uploadDir });
 const jobs = {};
 
-// Vérification de FFmpeg au démarrage
+// FFmpeg
 const ffmpegPath = ffmpegStatic || path.join(__dirname, 'ffmpeg.exe');
 console.log('🔍 FFmpeg utilisé :', ffmpegPath);
-if (!fs.existsSync(ffmpegPath)) {
-    console.error('❌ FFmpeg introuvable ! Placez ffmpeg.exe à côté de server.js ou installez ffmpeg-static.');
-}
 
 // Options HTTP communes
 const agentOptions = {
@@ -152,13 +152,13 @@ app.get('/api/download-sub', (req, res) => {
     });
 });
 
-// ================== NOUVELLES ROUTES CORRIGÉES (LOCAL) ==================
+// ================== CONVERSION ==================
 function runFfmpeg(args, res, jobId, inputPath) {
     const ff = spawn(ffmpegPath, args);
     let stderr = '';
     ff.stderr.on('data', (data) => {
         stderr += data.toString();
-        console.log(`[FFmpeg ${jobId}]`, data.toString()); // ✅ affichage console
+        console.log(`[FFmpeg ${jobId}]`, data.toString());
     });
     ff.on('close', (code) => {
         if (inputPath && fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
@@ -181,8 +181,6 @@ app.post('/api/convert-to-mp3', upload.single('file'), (req, res) => {
     const finalTitle = cleanFileName((req.body.originalName || 'Audio').replace(/\.[^/.]+$/, ""));
     jobs[jobId] = { status: 'converting', file: outputPath, ext: 'mp3', title: finalTitle, progress: '0', eta: '' };
     res.json({ jobId });
-
-    // Utiliser FFmpeg avec logging
     const args = ['-y', '-i', inputPath, '-vn', '-b:a', '192k', outputPath];
     runFfmpeg(args, res, jobId, inputPath);
 });
@@ -199,12 +197,10 @@ app.post('/api/convert-video', upload.single('file'), (req, res) => {
     const finalTitle = cleanFileName((req.body.originalName || 'Video').replace(/\.[^/.]+$/, ""));
     jobs[jobId] = { status: 'converting', file: outputPath, ext: outputFormat, title: finalTitle, progress: '0', eta: '' };
     res.json({ jobId });
-
     const args = ['-y'];
     if (start > 0) args.push('-ss', start.toString());
     args.push('-i', inputPath);
     if (end > 0) args.push('-to', end.toString());
-    // Codecs adaptés
     if (outputFormat === 'mp4') args.push('-c:v', 'libx264', '-c:a', 'aac');
     else if (outputFormat === 'webm') args.push('-c:v', 'libvpx-vp9', '-c:a', 'libopus');
     else if (outputFormat === 'avi') args.push('-c:v', 'libxvid', '-c:a', 'mp3');
@@ -230,5 +226,6 @@ app.get('/api/get-file', (req, res) => {
     });
 });
 
+// ✅ Port dynamique pour Render
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`🔥 Serveur prêt sur le port ${PORT}`));
