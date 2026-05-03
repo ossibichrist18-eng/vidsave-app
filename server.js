@@ -242,12 +242,11 @@ app.get('/api/get-file', (req, res) => {
 app.post('/api/cobalt', async (req, res) => {
   try {
     const { url, videoQuality, downloadMode } = req.body;
-    const response = await fetch('https://api.cobalt.tools/', {
+    const response = await fetch('https://cobalt.imput.net/', {
       method: 'POST',
       headers: {
         'Accept': 'application/json',
         'Content-Type': 'application/json',
-        'Authorization': `Api-Key ${process.env.COBALT_API_KEY || ''}`
       },
       body: JSON.stringify({
         url,
