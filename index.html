@@ -1301,6 +1301,39 @@ footer {
 <!-- ═══════════════════════ SCRIPTS ═══════════════════════ -->
 <script>
 /* ── CONFIG ── */
+   /* ── COBALT (YouTube) ── */
+function isYouTube(url) {
+  return url.includes('youtube.com') || url.includes('youtu.be');
+}
+
+async function downloadViaCobalt(url, title, quality) {
+  const videoQuality = (!quality || quality === 'best' || quality === 'mp3') ? '1080' : quality;
+  const isAudio = quality === 'mp3' || quality === 'audio';
+  
+  const res = await fetch('https://api.cobalt.tools/', {
+    method: 'POST',
+    headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      url: url,
+      videoQuality: videoQuality,
+      filenameStyle: 'pretty',
+      ...(isAudio ? { downloadMode: 'audio' } : {})
+    })
+  });
+
+  const data = await res.json();
+  if (data.status === 'error') throw new Error(data.error?.code || 'Cobalt error');
+  
+  // Déclenche le téléchargement direct
+  const a = document.createElement('a');
+  a.href = data.url;
+  a.download = title || 'video';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => a.remove(), 3000);
+  return data;
+}
+   
 const API_URL = '';
 let currentVideoData = null;
 let currentVideoUrl  = '';
@@ -1473,7 +1506,29 @@ async function searchVideo() {
     currentVideoData = data;
     renderVideoInfo(data);
   } catch(e) {
-    showError('result', '⚠️ Impossible d\'analyser ce lien. Vérifiez l\'URL ou la connexion au serveur.');
+    if (isYouTube(url)) {
+      currentVideoUrl = url;
+      currentVideoData = { title: 'YouTube Video', url: url };
+      document.getElementById('result').innerHTML = `
+        <div class="result-box">
+          <div class="result-title">▶ Vidéo YouTube détectée</div>
+          <div class="result-meta">⚡ Téléchargement via Cobalt</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px;margin-top:10px;">
+            <select id="formatSelector" style="padding:10px 14px;background:rgba(15,15,40,.9);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:.88rem;">
+              <option value="1080">📺 1080p Full HD</option>
+              <option value="720">🖥️ 720p HD</option>
+              <option value="480">📱 480p</option>
+              <option value="360">💾 360p</option>
+              <option value="mp3">🎵 Audio MP3</option>
+            </select>
+          </div>
+          <div class="action-buttons">
+            <button class="btn-primary" onclick="cobaltDirectDownload(); addRipple(event,this)">⬇️ Télécharger</button>
+          </div>
+        </div>`;
+    } else {
+      showError('result', '⚠️ Impossible d\'analyser ce lien. Vérifiez l\'URL ou la connexion au serveur.');
+    }
   }
   btn.disabled = false; btn.textContent = '⚡ Analyser';
 }
@@ -1507,6 +1562,22 @@ function renderVideoInfo(data) {
     </div>`;
 }
 
+   async function cobaltDirectDownload() {
+  const format = document.getElementById('formatSelector').value;
+  const url = currentVideoUrl;
+  addJobToQueue('Web', 'YouTube Video', async (tid) => {
+    try {
+      document.getElementById('txt_' + tid).innerText = '🔗 Cobalt en cours…';
+      await downloadViaCobalt(url, 'YouTube_Video', format);
+      document.getElementById('txt_' + tid).innerHTML = '✅ Téléchargement lancé !';
+      document.getElementById('prog_' + tid).style.width = '100%';
+      document.getElementById('prog_' + tid).style.background = 'linear-gradient(to right, var(--green), #00c896)';
+    } catch(e) {
+      document.getElementById('txt_' + tid).innerHTML = '❌ Erreur : ' + e.message;
+    }
+  });
+}
+
 function formatDuration(s) {
   const m = Math.floor(s / 60), sec = s % 60;
   return `${m}:${String(sec).padStart(2,'0')}`;
@@ -1521,10 +1592,30 @@ function showError(id, msg) {
 
 /* ── DOWNLOAD ── */
 function downloadVideo() {
-  const format = document.getElementById('formatSelector').value;
-  const start  = document.getElementById('clipStart')?.value || 0;
-  const end    = document.getElementById('clipEnd')?.value   || 0;
-  const data   = currentVideoData;
+  const format  = document.getElementById('formatSelector').value;
+  const start   = document.getElementById('clipStart')?.value || 0;
+  const end     = document.getElementById('clipEnd')?.value   || 0;
+  const data    = currentVideoData;
+
+  // ✅ YouTube → Cobalt direct
+  if (isYouTube(currentVideoUrl)) {
+    addJobToQueue('Web', data.title, async (tid) => {
+      try {
+        document.getElementById('txt_' + tid).innerText = '🔗 Cobalt en cours…';
+        await downloadViaCobalt(currentVideoUrl, data.title, format);
+        // Marque comme terminé visuellement
+        document.getElementById('txt_' + tid).innerHTML = '✅ Téléchargement lancé !';
+        document.getElementById('prog_' + tid).style.width = '100%';
+        document.getElementById('prog_' + tid).style.background = 'linear-gradient(to right, var(--green), #00c896)';
+      } catch(e) {
+        document.getElementById('txt_' + tid).innerHTML = '❌ Erreur Cobalt : ' + e.message;
+        document.getElementById('prog_' + tid).style.background = 'var(--red)';
+      }
+    });
+    return;
+  }
+
+  // Autres plateformes → serveur habituel
   addJobToQueue('Web', data.title, async (tid) => {
     const res = await fetch(`${API_URL}/api/start-download?url=${encodeURIComponent(currentVideoUrl)}&quality=${format}&title=${encodeURIComponent(data.title)}&start=${start}&end=${end}`);
     const job = await res.json();
