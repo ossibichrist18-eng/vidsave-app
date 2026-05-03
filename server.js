@@ -238,6 +238,34 @@ app.get('/api/get-file', (req, res) => {
     });
 });
 
+// --- ROUTE COBALT PROXY ---
+app.post('/api/cobalt', async (req, res) => {
+  try {
+    const { url, videoQuality, downloadMode } = req.body;
+    const response = await fetch('https://api.cobalt.tools/', {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'Authorization': `Api-Key ${process.env.COBALT_API_KEY || ''}`
+      },
+      body: JSON.stringify({
+        url,
+        videoQuality: videoQuality || '1080',
+        filenameStyle: 'pretty',
+        ...(downloadMode ? { downloadMode } : {})
+      })
+    });
+    const data = await response.json();
+    res.json(data);
+  } catch(e) {
+    res.status(500).json({ error: 'Cobalt proxy error' });
+  }
+});
+
+// ✅ Port dynamique pour Render
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`🔥 Serveur prêt sur le port ${PORT}`));
 // ✅ Port dynamique pour Render
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`🔥 Serveur prêt sur le port ${PORT}`));
