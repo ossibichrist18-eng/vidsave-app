@@ -1310,9 +1310,9 @@ async function downloadViaCobalt(url, title, quality) {
   const videoQuality = (!quality || quality === 'best' || quality === 'mp3') ? '1080' : quality;
   const isAudio = quality === 'mp3' || quality === 'audio';
   
-  const res = await fetch('https://api.cobalt.tools/', {
+  const res = await fetch('/api/cobalt', {
     method: 'POST',
-    headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       url: url,
       videoQuality: videoQuality,
