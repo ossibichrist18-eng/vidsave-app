@@ -261,10 +261,6 @@ app.post('/api/cobalt', async (req, res) => {
     res.status(500).json({ error: 'Cobalt proxy error' });
   }
 });
-
-// ✅ Port dynamique pour Render
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`🔥 Serveur prêt sur le port ${PORT}`));
 // ✅ Port dynamique pour Render
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`🔥 Serveur prêt sur le port ${PORT}`));
