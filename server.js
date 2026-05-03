@@ -11,6 +11,17 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Route sitemap.xml avec bon Content-Type
+app.get('/sitemap.xml', (req, res) => {
+  res.setHeader('Content-Type', 'application/xml; charset=utf-8');
+  res.sendFile(path.join(__dirname, 'sitemap.xml'));
+});
+
+// Route fichier vérification Google
+app.get('/googlec29be3f3b9d13ec3.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'googlec29be3f3b9d13ec3.html'));
+});
+
 // ✅ Servir le fichier index.html
 app.use(express.static(path.join(__dirname)));
 
