@@ -242,7 +242,7 @@ app.get('/api/get-file', (req, res) => {
 app.post('/api/cobalt', async (req, res) => {
   try {
     const { url, videoQuality, downloadMode } = req.body;
-    const response = await fetch('https://cobalt.imput.net/', {
+    const response = await fetch('https://cobalt.tools.fopnet.fr/', {
       method: 'POST',
       headers: {
         'Accept': 'application/json',
