@@ -1502,7 +1502,8 @@ async function searchVideo() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ url })
     });
-    const data = await res.json();
+   const data = await res.json();
+    if (!res.ok || data.error) throw new Error(data.error || 'Server error');
     currentVideoData = data;
     renderVideoInfo(data);
   } catch(e) {
