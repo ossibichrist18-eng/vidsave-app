@@ -20,6 +20,10 @@ app.get('/googlec29be3f3b9d13ec3.html', (req, res) => {
   res.sendFile(path.join(__dirname, 'googlec29be3f3b9d13ec3.html'));
 });
 app.use(express.static(path.join(__dirname)));
+app.get('/robots.txt', (req, res) => {
+  res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+  res.sendFile(path.join(__dirname, 'robots.txt'));
+});
 
 const dlDir = path.join(__dirname, 'downloads');
 const uploadDir = path.join(__dirname, 'uploads');
