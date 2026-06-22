@@ -11,37 +11,33 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// 1. Health Check & SEO Files
 app.get('/ping', (req, res) => res.status(200).send('OK'));
+
 app.get('/sitemap.xml', (req, res) => {
   res.setHeader('Content-Type', 'application/xml; charset=utf-8');
   res.sendFile(path.join(__dirname, 'sitemap.xml'));
 });
+
 app.get('/robots.txt', (req, res) => {
   res.setHeader('Content-Type', 'text/plain; charset=utf-8');
   res.sendFile(path.join(__dirname, 'robots.txt'));
 });
+
 app.get('/googlec29be3f3b9d13ec3.html', (req, res) => {
   res.sendFile(path.join(__dirname, 'googlec29be3f3b9d13ec3.html'));
 });
-// Pages dédiées SEO
-app.get('/tiktok-downloader', (req, res) => {
-  res.sendFile(path.join(__dirname, 'tiktok-downloader.html'));
-});
-app.get('/facebook-downloader', (req, res) => {
-  res.sendFile(path.join(__dirname, 'facebook-downloader.html'));
-});
-app.get('/instagram-downloader', (req, res) => {
-  res.sendFile(path.join(__dirname, 'instagram-downloader.html'));
-});
-app.get('/twitter-downloader', (req, res) => {
-  res.sendFile(path.join(__dirname, 'twitter-downloader.html'));
-});
-app.get('/video-to-mp3', (req, res) => {
-  res.sendFile(path.join(__dirname, 'video-to-mp3.html'));
+
+// 2. Dedicated Pages for SEO (TikTok, Facebook, etc.)
+const pages = ['tiktok-downloader', 'facebook-downloader', 'instagram-downloader', 'twitter-downloader', 'video-to-mp3'];
+pages.forEach(p => {
+  app.get(`/${p}`, (req, res) => res.sendFile(path.join(__dirname, `${p}.html`)));
 });
 
+// 3. Static Files (index.html, etc.)
 app.use(express.static(path.join(__dirname)));
 
+// 4. Setup Directories
 const dlDir = path.join(__dirname, 'downloads');
 const uploadDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(dlDir)) fs.mkdirSync(dlDir);
@@ -56,9 +52,8 @@ function cleanFileName(str) {
   return str.replace(/[\\/:*?"<>|]/g, '').trim().substring(0, 150);
 }
 
-// Options avec impersonation pour contourner les blocages
+// 5. YT-DLP Options (Headers to look like a real browser)
 const ytOptions = {
-  impersonate: 'chrome',
   addHeader: [
     'User-Agent:Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
     'Accept:text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
@@ -70,24 +65,15 @@ const ytOptions = {
   ]
 };
 
-// ✅ INFOS VIDÉO
+// 6. API Routes
+
+// Info
 app.post('/api/info', async (req, res) => {
   try {
     console.log('🔍 Analyse URL:', req.body.url);
-    const startTime = Date.now();
-    
-    const info = await youtubedl(req.body.url, { 
-      dumpSingleJson: true, 
-      noWarnings: true, 
-      noPlaylist: true, 
-      ...ytOptions 
-    });
-    
-    console.log(`✅ Métadonnées récupérées en ${Date.now() - startTime}ms`);
-    
+    const info = await youtubedl(req.body.url, { dumpSingleJson: true, noWarnings: true, noPlaylist: true, ...ytOptions });
     let qualities = new Set();
     if (info.formats) info.formats.forEach(f => { if (f.height && f.height >= 144) qualities.add(f.height); });
-    
     res.json({
       title: info.title || "Vidéo",
       thumbnail: info.thumbnail,
@@ -97,33 +83,22 @@ app.post('/api/info', async (req, res) => {
     });
   } catch (error) {
     console.error("❌ Erreur info:", error.message);
-    res.status(500).json({ error: "Impossible d'analyser. TikTok bloque temporairement." });
+    res.status(500).json({ error: "Impossible d'analyser." });
   }
 });
 
-// ✅ PLAYLIST
+// Playlist
 app.post('/api/playlist', async (req, res) => {
   try {
-    const info = await youtubedl(req.body.url, { 
-      dumpSingleJson: true, 
-      yesPlaylist: true, 
-      flatPlaylist: true, 
-      noWarnings: true, 
-      ...ytOptions 
-    });
+    const info = await youtubedl(req.body.url, { dumpSingleJson: true, yesPlaylist: true, flatPlaylist: true, noWarnings: true, ...ytOptions });
     if (info.entries) {
-      const videos = info.entries.map(e => ({ 
-        title: e.title || 'Sans titre', 
-        url: e.url || e.webpage_url, 
-        duration: e.duration_string || '?', 
-        thumbnail: e.thumbnail || '' 
-      }));
+      const videos = info.entries.map(e => ({ title: e.title || 'Sans titre', url: e.url || e.webpage_url, duration: e.duration_string || '?', thumbnail: e.thumbnail || '' }));
       res.json({ title: info.title, entries: videos });
     } else res.status(404).json({ error: "Aucune vidéo." });
   } catch (error) { res.status(500).json({ error: "Erreur playlist." }); }
 });
 
-// ✅ TÉLÉCHARGEMENT
+// Start Download
 app.get('/api/start-download', (req, res) => {
   const { url, quality, title } = req.query;
   const finalTitle = cleanFileName(title || 'Video');
@@ -138,12 +113,7 @@ app.get('/api/start-download', (req, res) => {
   if (quality === 'mp3') formatSelection = 'bestaudio[ext=m4a]/bestaudio';
   else if (quality && !isNaN(quality)) formatSelection = `bestvideo[height<=${quality}]+bestaudio/best[height<=${quality}]`;
 
-  const dlOptions = { 
-    f: formatSelection, 
-    o: tempFile, 
-    ffmpegLocation: path.dirname(ffmpegPath), 
-    ...ytOptions 
-  };
+  const dlOptions = { f: formatSelection, o: tempFile, ffmpegLocation: path.dirname(ffmpegPath), ...ytOptions };
   if (ext === 'mp3') { dlOptions.extractAudio = true; dlOptions.audioFormat = 'mp3'; }
 
   console.log(`🚀 Début téléchargement ${jobId}`);
@@ -158,7 +128,7 @@ app.get('/api/start-download', (req, res) => {
   proc.on('close', (code) => {
     if (code !== 0) { 
       jobs[jobId].status = 'error'; 
-      console.error('❌ Erreur téléchargement'); 
+      console.error('❌ Erreur téléchargement code:', code); 
       return; 
     }
     const finalFile = path.join(dlDir, `${finalTitle}_${jobId}.${ext}`);
@@ -168,7 +138,7 @@ app.get('/api/start-download', (req, res) => {
   });
 });
 
-// ✅ MINIATURE
+// Thumbnail
 app.get('/api/download-thumb', async (req, res) => {
   try {
     const response = await fetch(req.query.url);
@@ -178,7 +148,28 @@ app.get('/api/download-thumb', async (req, res) => {
   } catch (e) { res.status(500).send("Erreur."); }
 });
 
-// ✅ CONVERSION
+// Subtitles Info
+app.post('/api/subtitles', async (req, res) => {
+  try {
+    const info = await youtubedl(req.body.url, { dumpSingleJson: true, noWarnings: true, noPlaylist: true, ...ytOptions });
+    const subs = info.subtitles || {};
+    const langs = Object.keys(subs).map(l => ({ code: l, name: subs[l][0]?.name || l }));
+    res.json({ languages: langs });
+  } catch(e) { res.status(500).json({ error: "Erreur." }); }
+});
+
+// Download Subtitle
+app.get('/api/download-sub', (req, res) => {
+  const url = req.query.url, lang = req.query.lang || 'fr';
+  const subFile = path.join(dlDir, `sub_${Date.now()}.srt`);
+  const proc = youtubedl.exec(url, { writeSub: true, subLang: lang, skipDownload: true, o: subFile, ...ytOptions });
+  proc.on('close', (code) => {
+    if (code === 0 && fs.existsSync(subFile)) res.download(subFile, `subtitles_${lang}.srt`, () => fs.existsSync(subFile) && fs.unlinkSync(subFile));
+    else res.status(500).send("Erreur.");
+  });
+});
+
+// Conversion Logic
 function runFfmpeg(args, jobId, inputPath) {
   const ff = spawn(ffmpegPath, args);
   ff.on('close', (code) => {
@@ -208,7 +199,7 @@ app.post('/api/convert-video', upload.single('file'), (req, res) => {
   runFfmpeg(['-y', '-i', inputPath, outputPath], jobId, inputPath);
 });
 
-// ✅ STATUT & FICHIER
+// Status & Get File
 app.get('/api/status', (req, res) => {
   const job = jobs[req.query.jobId];
   if (!job) return res.json({ status: 'not_found' });
@@ -224,5 +215,5 @@ app.get('/api/get-file', (req, res) => {
   });
 });
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => console.log(`🔥 Serveur prêt sur le port ${PORT}`));
