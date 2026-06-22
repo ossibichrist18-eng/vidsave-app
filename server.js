@@ -10,6 +10,10 @@ const ffmpegStatic = require('ffmpeg-static');
 const app = express();
 app.use(cors());
 app.use(express.json());
+// Endpoint ping pour health check (cron-job.org)
+app.get('/ping', (req, res) => {
+  res.status(200).send('OK');
+});
 
 // Route sitemap.xml avec bon Content-Type
 app.get('/sitemap.xml', (req, res) => {
