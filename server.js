@@ -23,6 +23,22 @@ app.get('/robots.txt', (req, res) => {
 app.get('/googlec29be3f3b9d13ec3.html', (req, res) => {
   res.sendFile(path.join(__dirname, 'googlec29be3f3b9d13ec3.html'));
 });
+// Pages dédiées SEO
+app.get('/tiktok-downloader', (req, res) => {
+  res.sendFile(path.join(__dirname, 'tiktok-downloader.html'));
+});
+app.get('/facebook-downloader', (req, res) => {
+  res.sendFile(path.join(__dirname, 'facebook-downloader.html'));
+});
+app.get('/instagram-downloader', (req, res) => {
+  res.sendFile(path.join(__dirname, 'instagram-downloader.html'));
+});
+app.get('/twitter-downloader', (req, res) => {
+  res.sendFile(path.join(__dirname, 'twitter-downloader.html'));
+});
+app.get('/video-to-mp3', (req, res) => {
+  res.sendFile(path.join(__dirname, 'video-to-mp3.html'));
+});
 
 app.use(express.static(path.join(__dirname)));
 
