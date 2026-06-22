@@ -16,14 +16,15 @@ app.get('/sitemap.xml', (req, res) => {
   res.setHeader('Content-Type', 'application/xml; charset=utf-8');
   res.sendFile(path.join(__dirname, 'sitemap.xml'));
 });
-app.get('/googlec29be3f3b9d13ec3.html', (req, res) => {
-  res.sendFile(path.join(__dirname, 'googlec29be3f3b9d13ec3.html'));
-});
-app.use(express.static(path.join(__dirname)));
 app.get('/robots.txt', (req, res) => {
   res.setHeader('Content-Type', 'text/plain; charset=utf-8');
   res.sendFile(path.join(__dirname, 'robots.txt'));
 });
+app.get('/googlec29be3f3b9d13ec3.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'googlec29be3f3b9d13ec3.html'));
+});
+
+app.use(express.static(path.join(__dirname)));
 
 const dlDir = path.join(__dirname, 'downloads');
 const uploadDir = path.join(__dirname, 'uploads');
@@ -39,20 +40,38 @@ function cleanFileName(str) {
   return str.replace(/[\\/:*?"<>|]/g, '').trim().substring(0, 150);
 }
 
-// Options yt-dlp pour TikTok, Facebook, Instagram, etc.
+// Options avec impersonation pour contourner les blocages
 const ytOptions = {
+  impersonate: 'chrome',
   addHeader: [
-    'User-Agent:Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-    'Accept:text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+    'User-Agent:Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    'Accept:text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+    'Accept-Language:fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7',
+    'Accept-Encoding:gzip, deflate, br',
+    'DNT:1',
+    'Connection:keep-alive',
+    'Upgrade-Insecure-Requests:1'
   ]
 };
 
 // ✅ INFOS VIDÉO
 app.post('/api/info', async (req, res) => {
   try {
-    const info = await youtubedl(req.body.url, { dumpSingleJson: true, noWarnings: true, noPlaylist: true, ...ytOptions });
+    console.log('🔍 Analyse URL:', req.body.url);
+    const startTime = Date.now();
+    
+    const info = await youtubedl(req.body.url, { 
+      dumpSingleJson: true, 
+      noWarnings: true, 
+      noPlaylist: true, 
+      ...ytOptions 
+    });
+    
+    console.log(`✅ Métadonnées récupérées en ${Date.now() - startTime}ms`);
+    
     let qualities = new Set();
     if (info.formats) info.formats.forEach(f => { if (f.height && f.height >= 144) qualities.add(f.height); });
+    
     res.json({
       title: info.title || "Vidéo",
       thumbnail: info.thumbnail,
@@ -62,16 +81,27 @@ app.post('/api/info', async (req, res) => {
     });
   } catch (error) {
     console.error("❌ Erreur info:", error.message);
-    res.status(500).json({ error: "Impossible d'analyser." });
+    res.status(500).json({ error: "Impossible d'analyser. TikTok bloque temporairement." });
   }
 });
 
 // ✅ PLAYLIST
 app.post('/api/playlist', async (req, res) => {
   try {
-    const info = await youtubedl(req.body.url, { dumpSingleJson: true, yesPlaylist: true, flatPlaylist: true, noWarnings: true, ...ytOptions });
+    const info = await youtubedl(req.body.url, { 
+      dumpSingleJson: true, 
+      yesPlaylist: true, 
+      flatPlaylist: true, 
+      noWarnings: true, 
+      ...ytOptions 
+    });
     if (info.entries) {
-      const videos = info.entries.map(e => ({ title: e.title || 'Sans titre', url: e.url || e.webpage_url, duration: e.duration_string || '?', thumbnail: e.thumbnail || '' }));
+      const videos = info.entries.map(e => ({ 
+        title: e.title || 'Sans titre', 
+        url: e.url || e.webpage_url, 
+        duration: e.duration_string || '?', 
+        thumbnail: e.thumbnail || '' 
+      }));
       res.json({ title: info.title, entries: videos });
     } else res.status(404).json({ error: "Aucune vidéo." });
   } catch (error) { res.status(500).json({ error: "Erreur playlist." }); }
@@ -92,17 +122,29 @@ app.get('/api/start-download', (req, res) => {
   if (quality === 'mp3') formatSelection = 'bestaudio[ext=m4a]/bestaudio';
   else if (quality && !isNaN(quality)) formatSelection = `bestvideo[height<=${quality}]+bestaudio/best[height<=${quality}]`;
 
-  const dlOptions = { f: formatSelection, o: tempFile, ffmpegLocation: path.dirname(ffmpegPath), ...ytOptions };
+  const dlOptions = { 
+    f: formatSelection, 
+    o: tempFile, 
+    ffmpegLocation: path.dirname(ffmpegPath), 
+    ...ytOptions 
+  };
   if (ext === 'mp3') { dlOptions.extractAudio = true; dlOptions.audioFormat = 'mp3'; }
 
+  console.log(`🚀 Début téléchargement ${jobId}`);
   const proc = youtubedl.exec(url, dlOptions);
+  
   proc.stdout.on('data', (data) => {
     const text = data.toString();
     const match = text.match(/\[download\]\s+([\d\.]+)%/);
     if (match) jobs[jobId].progress = match[1];
   });
+  
   proc.on('close', (code) => {
-    if (code !== 0) { jobs[jobId].status = 'error'; console.error('❌ Erreur téléchargement'); return; }
+    if (code !== 0) { 
+      jobs[jobId].status = 'error'; 
+      console.error('❌ Erreur téléchargement'); 
+      return; 
+    }
     const finalFile = path.join(dlDir, `${finalTitle}_${jobId}.${ext}`);
     try { fs.renameSync(tempFile, finalFile); jobs[jobId].file = finalFile; } catch(e) {}
     jobs[jobId].status = 'done';
@@ -118,26 +160,6 @@ app.get('/api/download-thumb', async (req, res) => {
     res.set('Content-Type', response.headers.get('content-type') || 'image/jpeg');
     res.send(buffer);
   } catch (e) { res.status(500).send("Erreur."); }
-});
-
-// ✅ SOUS-TITRES
-app.post('/api/subtitles', async (req, res) => {
-  try {
-    const info = await youtubedl(req.body.url, { dumpSingleJson: true, noWarnings: true, noPlaylist: true, ...ytOptions });
-    const subs = info.subtitles || {};
-    const langs = Object.keys(subs).map(l => ({ code: l, name: subs[l][0]?.name || l }));
-    res.json({ languages: langs });
-  } catch(e) { res.status(500).json({ error: "Erreur." }); }
-});
-
-app.get('/api/download-sub', (req, res) => {
-  const url = req.query.url, lang = req.query.lang || 'fr';
-  const subFile = path.join(dlDir, `sub_${Date.now()}.srt`);
-  const proc = youtubedl.exec(url, { writeSub: true, subLang: lang, skipDownload: true, o: subFile, ...ytOptions });
-  proc.on('close', (code) => {
-    if (code === 0 && fs.existsSync(subFile)) res.download(subFile, `subtitles_${lang}.srt`, () => fs.existsSync(subFile) && fs.unlinkSync(subFile));
-    else res.status(500).send("Erreur.");
-  });
 });
 
 // ✅ CONVERSION
