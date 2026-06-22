@@ -10,26 +10,23 @@ const ffmpegStatic = require('ffmpeg-static');
 const app = express();
 app.use(cors());
 app.use(express.json());
+
 // Endpoint ping pour health check (cron-job.org)
 app.get('/ping', (req, res) => {
   res.status(200).send('OK');
 });
 
-// Route sitemap.xml avec bon Content-Type
 app.get('/sitemap.xml', (req, res) => {
   res.setHeader('Content-Type', 'application/xml; charset=utf-8');
   res.sendFile(path.join(__dirname, 'sitemap.xml'));
 });
 
-// Route fichier vérification Google
 app.get('/googlec29be3f3b9d13ec3.html', (req, res) => {
   res.sendFile(path.join(__dirname, 'googlec29be3f3b9d13ec3.html'));
 });
 
-// ✅ Servir le fichier index.html
 app.use(express.static(path.join(__dirname)));
 
-// Dossiers
 const dlDir = path.join(__dirname, 'downloads');
 const uploadDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(dlDir)) fs.mkdirSync(dlDir);
@@ -38,15 +35,14 @@ if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
 const upload = multer({ dest: uploadDir });
 const jobs = {};
 
-// FFmpeg
 const ffmpegPath = ffmpegStatic || path.join(__dirname, 'ffmpeg.exe');
 console.log('🔍 FFmpeg utilisé :', ffmpegPath);
 
-// Options HTTP communes
 const agentOptions = {
     addHeader: [
-        'user-agent:Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-        'accept:text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+        'user-agent:Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'accept:text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'accept-language:fr-FR,fr;q=0.9,en;q=0.8'
     ]
 };
 
@@ -55,24 +51,97 @@ function cleanFileName(str) {
     return str.replace(/[\\/:*?"<>|]/g, '').trim().substring(0, 150);
 }
 
-// --- ROUTE 1 : INFOS VIDÉO ---
+// ============================================
+// ✅ ROUTE COBALT — Instance fiable + gestion d'erreur
+// ============================================
+app.post('/api/cobalt', async (req, res) => {
+  try {
+    const { url, videoQuality, downloadMode } = req.body;
+    const isAudio = downloadMode === 'audio';
+
+    // Essayer plusieurs instances Cobalt (fallback automatique)
+    const instances = [
+      'https://cobalt.tools.fopnet.fr/',
+      'https://api.cobalt.tools/',
+    ];
+
+    let lastError = null;
+    for (const instance of instances) {
+      try {
+        const response = await fetch(instance, {
+          method: 'POST',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            url,
+            videoQuality: videoQuality || '1080',
+            filenameStyle: 'pretty',
+            ...(isAudio ? { downloadMode: 'audio', audioFormat: 'mp3' } : {})
+          })
+        });
+
+        const data = await response.json();
+
+        // Vérifier que c'est bien un JSON valide avec une URL
+        if (data && (data.status === 'redirect' || data.status === 'stream') && data.url) {
+          // S'assurer que l'URL n'est pas une page HTML
+          if (data.url.endsWith('.htm') || data.url.endsWith('.html')) {
+            lastError = 'Cobalt a renvoyé une page HTML';
+            continue;
+          }
+          return res.json(data);
+        }
+
+        if (data && data.status === 'error') {
+          lastError = data.error?.text || data.error?.code || 'Erreur Cobalt';
+          continue;
+        }
+
+        lastError = 'Réponse Cobalt invalide';
+      } catch (e) {
+        lastError = e.message;
+        continue;
+      }
+    }
+
+    // Si toutes les instances Cobalt échouent, fallback vers yt-dlp direct
+    console.log('⚠️ Cobalt échoué, fallback vers yt-dlp direct');
+    return res.json({ status: 'fallback', error: lastError });
+
+  } catch(e) {
+    console.error('❌ Cobalt proxy error:', e.message);
+    res.status(500).json({ error: 'Cobalt proxy error: ' + e.message });
+  }
+});
+
+// ============================================
+// ✅ ROUTE 1 : INFOS VIDÉO (yt-dlp)
+// ============================================
 app.post('/api/info', async (req, res) => {
     try {
         let url = req.body.url;
         if (url.includes('youtu') && url.includes('?si=')) url = url.split('?si=')[0];
         const info = await youtubedl(url, { dumpSingleJson: true, noWarnings: true, noPlaylist: true, ...agentOptions });
         let qualities = new Set();
-        if (info.formats) info.formats.forEach(f => { if (f.height >= 144) qualities.add(f.height); });
+        if (info.formats) info.formats.forEach(f => { if (f.height && f.height >= 144) qualities.add(f.height); });
         res.json({
-            title: info.title || "Vidéo", thumbnail: info.thumbnail, url: url,
-            qualities: Array.from(qualities).sort((a, b) => b - a), duration: info.duration || 0
+            title: info.title || "Vidéo",
+            thumbnail: info.thumbnail,
+            url: url,
+            qualities: Array.from(qualities).sort((a, b) => b - a),
+            duration: info.duration || 0
         });
     } catch (error) {
+        console.error('Erreur /api/info:', error.message);
         res.status(500).json({ error: "Impossible d'analyser la vidéo." });
     }
 });
 
-// --- ROUTE 2 : PLAYLIST ---
+// ============================================
+// ✅ ROUTE 2 : PLAYLIST
+// ============================================
 app.post('/api/playlist', async (req, res) => {
     try {
         const info = await youtubedl(req.body.url, { dumpSingleJson: true, yesPlaylist: true, flatPlaylist: true, noWarnings: true, ...agentOptions });
@@ -85,7 +154,9 @@ app.post('/api/playlist', async (req, res) => {
     }
 });
 
-// --- ROUTE 3 : TÉLÉCHARGEMENT VIDÉO ---
+// ============================================
+// ✅ ROUTE 3 : TÉLÉCHARGEMENT VIDÉO (yt-dlp backend)
+// ============================================
 app.get('/api/start-download', (req, res) => {
     const { url, quality, title, start, end } = req.query;
     const finalTitle = cleanFileName(title || 'Video');
@@ -93,10 +164,15 @@ app.get('/api/start-download', (req, res) => {
     const endSec = parseFloat(end) || 0;
     const jobId = 'dl_' + Date.now();
     let formatSelection, ext = 'mp4';
-    if (quality === 'audio') { formatSelection = 'bestaudio[ext=m4a]/bestaudio'; ext = 'm4a'; }
-    else if (quality === 'mp3') { formatSelection = 'bestaudio/best'; ext = 'mp3'; }
-    else if (!quality || isNaN(quality)) { formatSelection = 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best'; }
-else { formatSelection = `bestvideo[vcodec^=avc][height<=${quality}][ext=mp4]+bestaudio[ext=m4a]/best[vcodec^=avc][height<=${quality}][ext=mp4]/best`; }
+
+    if (quality === 'audio' || quality === 'mp3') {
+        formatSelection = 'bestaudio/best';
+        ext = 'mp3';
+    } else if (!quality || isNaN(quality) || quality === 'best') {
+        formatSelection = 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best';
+    } else {
+        formatSelection = `bestvideo[vcodec^=avc][height<=${quality}][ext=mp4]+bestaudio[ext=m4a]/best[vcodec^=avc][height<=${quality}][ext=mp4]/best[height<=${quality}]`;
+    }
 
     const tempFile = path.join(dlDir, `temp_${jobId}.${ext}`);
     jobs[jobId] = { status: 'downloading', file: tempFile, ext, title: finalTitle, progress: '0', eta: '--:--' };
@@ -113,6 +189,9 @@ else { formatSelection = `bestvideo[vcodec^=avc][height<=${quality}][ext=mp4]+be
         const etaMatch = text.match(/ETA\s+([\d:]+)/);
         if (match) jobs[jobId].progress = match[1];
         if (etaMatch) jobs[jobId].eta = etaMatch[1];
+    });
+    proc.stderr.on('data', (data) => {
+        console.log('[yt-dlp stderr]', data.toString().trim());
     });
     proc.on('close', (code) => {
         if (code !== 0) { jobs[jobId].status = 'error'; return; }
@@ -135,7 +214,9 @@ else { formatSelection = `bestvideo[vcodec^=avc][height<=${quality}][ext=mp4]+be
     });
 });
 
-// --- ROUTE 4 : MINIATURE ---
+// ============================================
+// ✅ ROUTE 4 : MINIATURE
+// ============================================
 app.get('/api/download-thumb', async (req, res) => {
     try {
         const response = await fetch(req.query.url);
@@ -147,7 +228,9 @@ app.get('/api/download-thumb', async (req, res) => {
     } catch (e) { res.status(500).send("Erreur miniature."); }
 });
 
-// --- ROUTE 5 : SOUS-TITRES ---
+// ============================================
+// ✅ ROUTE 5 : SOUS-TITRES
+// ============================================
 app.post('/api/subtitles', async (req, res) => {
     try {
         const info = await youtubedl(req.body.url, { dumpSingleJson: true, noWarnings: true, noPlaylist: true, ...agentOptions });
@@ -157,7 +240,9 @@ app.post('/api/subtitles', async (req, res) => {
     } catch(e) { res.status(500).json({ error: "Erreur sous-titres." }); }
 });
 
-// --- ROUTE 6 : TÉLÉCHARGER SOUS-TITRES ---
+// ============================================
+// ✅ ROUTE 6 : TÉLÉCHARGER SOUS-TITRES
+// ============================================
 app.get('/api/download-sub', (req, res) => {
     const url = req.query.url, lang = req.query.lang || 'fr';
     const subFile = path.join(dlDir, `sub_${Date.now()}.srt`);
@@ -168,13 +253,14 @@ app.get('/api/download-sub', (req, res) => {
     });
 });
 
-// ================== CONVERSION ==================
+// ============================================
+// ✅ CONVERSION MP3
+// ============================================
 function runFfmpeg(args, res, jobId, inputPath) {
     const ff = spawn(ffmpegPath, args);
     let stderr = '';
     ff.stderr.on('data', (data) => {
         stderr += data.toString();
-        console.log(`[FFmpeg ${jobId}]`, data.toString());
     });
     ff.on('close', (code) => {
         if (inputPath && fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
@@ -188,7 +274,6 @@ function runFfmpeg(args, res, jobId, inputPath) {
     });
 }
 
-// -- MP3 --
 app.post('/api/convert-to-mp3', upload.single('file'), (req, res) => {
     if (!req.file) return res.status(400).json({ error: "Fichier manquant" });
     const jobId = 'locmp3_' + Date.now();
@@ -201,7 +286,9 @@ app.post('/api/convert-to-mp3', upload.single('file'), (req, res) => {
     runFfmpeg(args, res, jobId, inputPath);
 });
 
-// -- CONVERSION VIDÉO --
+// ============================================
+// ✅ CONVERSION VIDÉO
+// ============================================
 app.post('/api/convert-video', upload.single('file'), (req, res) => {
     if (!req.file) return res.status(400).json({ error: "Fichier manquant" });
     const outputFormat = req.body.format || 'mp4';
@@ -225,14 +312,18 @@ app.post('/api/convert-video', upload.single('file'), (req, res) => {
     runFfmpeg(args, res, jobId, inputPath);
 });
 
-// --- ROUTE 7 : STATUT ---
+// ============================================
+// ✅ STATUT
+// ============================================
 app.get('/api/status', (req, res) => {
     const job = jobs[req.query.jobId];
     if (!job) return res.json({ status: 'not_found' });
     res.json({ status: job.status, progress: job.progress, eta: job.eta });
 });
 
-// --- ROUTE 8 : TÉLÉCHARGEMENT FINAL ---
+// ============================================
+// ✅ TÉLÉCHARGEMENT FINAL
+// ============================================
 app.get('/api/get-file', (req, res) => {
     const job = jobs[req.query.jobId];
     if (!job || job.status !== 'done') return res.status(400).send("Fichier indisponible");
@@ -242,29 +333,8 @@ app.get('/api/get-file', (req, res) => {
     });
 });
 
-// --- ROUTE COBALT PROXY ---
-app.post('/api/cobalt', async (req, res) => {
-  try {
-    const { url, videoQuality, downloadMode } = req.body;
-    const response = await fetch('https://cobalt.tools.fopnet.fr/', {
-      method: 'POST',
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        url,
-        videoQuality: videoQuality || '1080',
-        filenameStyle: 'pretty',
-        ...(downloadMode ? { downloadMode } : {})
-      })
-    });
-    const data = await response.json();
-    res.json(data);
-  } catch(e) {
-    res.status(500).json({ error: 'Cobalt proxy error' });
-  }
-});
-// ✅ Port dynamique pour Render
+// ============================================
+// ✅ PORT
+// ============================================
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`🔥 Serveur prêt sur le port ${PORT}`));
